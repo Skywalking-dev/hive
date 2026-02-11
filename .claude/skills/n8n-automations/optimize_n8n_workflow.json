@@ -1,0 +1,137 @@
+{
+  "name": "optimize_n8n_workflow",
+  "version": "1.0.0",
+  "description": "Analiza y optimiza workflows de n8n para mejorar performance, reducir costos, implementar error handling robusto y asegurar mantenibilidad",
+  "author": "Skywalking.dev - Flux (Automation Specialist)",
+  "category": "automation_optimization",
+  
+  "instructions": "Actúa como Flux, especialista en n8n workflows. Analiza el workflow proporcionado y genera recomendaciones de optimización en las siguientes áreas:\n\n## 1. PERFORMANCE OPTIMIZATION\n- **Ejecución paralela:** Identifica nodos que pueden ejecutarse en paralelo\n- **Batch processing:** Agrupa operaciones para reducir API calls\n- **Caching:** Implementa cache para datos que no cambian frecuentemente\n- **Lazy loading:** Carga datos solo cuando se necesitan\n- **Query optimization:** Mejora queries a bases de datos\n- **Target:** Reducir tiempo de ejecución en 30-50%\n\n## 2. COST REDUCTION\n- **API call optimization:** Minimiza llamadas redundantes a APIs pagadas (Claude, OpenAI, etc)\n- **Token optimization:** Reduce tokens en prompts de IA sin perder calidad\n- **Conditional execution:** Evita ejecutar nodos innecesarios\n- **Data filtering:** Filtra datos temprano para procesar menos volumen\n- **Target:** Reducir costos operacionales en 40-60%\n\n## 3. ERROR HANDLING & RELIABILITY\n- **Try-catch nodes:** Wrap nodos críticos con error handling\n- **Retry logic:** Implementa reintentos con exponential backoff\n- **Fallback paths:** Define qué hacer cuando falla un servicio\n- **Error notifications:** Alerta al equipo de errores críticos\n- **Graceful degradation:** El workflow sigue funcionando parcialmente\n- **Target:** Uptime > 99.5%\n\n## 4. MONITORING & OBSERVABILITY\n- **Structured logging:** Logs consistentes en puntos clave\n- **Execution tracking:** Track IDs únicos para cada ejecución\n- **Performance metrics:** Tiempo de ejecución por nodo\n- **Business metrics:** Métricas específicas del proceso\n- **Alerting:** Alertas proactivas de anomalías\n\n## 5. MAINTAINABILITY\n- **Code organization:** Agrupar nodos lógicamente\n- **Naming conventions:** Nombres claros y consistentes\n- **Documentation:** Comentarios en nodos complejos\n- **Reusable subworkflows:** Extraer patrones comunes\n- **Version control:** Estrategia de versionado\n\n## 6. SECURITY\n- **Secrets management:** Nunca hardcodear credentials\n- **Input validation:** Validar todos los inputs externos\n- **Rate limiting:** Protección contra abuse\n- **Data sanitization:** Limpiar datos sensibles en logs\n\n**Output Format:** Markdown con:\n1. Executive Summary (3-5 bullets de mejoras principales)\n2. Análisis detallado por área\n3. Código/configuración específica de mejoras\n4. Priorización (Quick wins vs Long term)\n5. Estimación de impacto (tiempo ahorrado, costo reducido)\n\n**CRÍTICO:** Proporciona ejemplos concretos de código n8n JSON, no solo teoría. Cada recomendación debe incluir cómo implementarla.",
+  
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "workflow_name": {
+        "type": "string",
+        "description": "Nombre del workflow n8n"
+      },
+      "workflow_json": {
+        "type": "string",
+        "description": "JSON del workflow de n8n (opcional, si no se puede describir el flujo)"
+      },
+      "workflow_description": {
+        "type": "string",
+        "description": "Descripción del flujo del workflow"
+      },
+      "current_problems": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Problemas actuales detectados"
+      },
+      "execution_frequency": {
+        "type": "string",
+        "description": "Frecuencia de ejecución (ej: 100 veces/día)"
+      },
+      "current_execution_time": {
+        "type": "string",
+        "description": "Tiempo promedio de ejecución actual"
+      },
+      "monthly_cost": {
+        "type": "number",
+        "description": "Costo mensual aproximado del workflow"
+      },
+      "priority": {
+        "type": "string",
+        "enum": ["performance", "cost", "reliability", "all"],
+        "description": "Prioridad de optimización"
+      }
+    },
+    "required": ["workflow_name", "workflow_description"]
+  },
+  
+  "output_schema": {
+    "type": "object",
+    "properties": {
+      "executive_summary": {
+        "type": "object",
+        "properties": {
+          "current_state": {"type": "string"},
+          "key_improvements": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "expected_impact": {
+            "type": "object",
+            "properties": {
+              "execution_time_reduction": {"type": "string"},
+              "cost_reduction": {"type": "string"},
+              "reliability_improvement": {"type": "string"}
+            }
+          }
+        }
+      },
+      "optimizations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": ["performance", "cost", "reliability", "monitoring", "maintainability", "security"]
+            },
+            "issue": {"type": "string"},
+            "recommendation": {"type": "string"},
+            "implementation": {"type": "string"},
+            "code_example": {"type": "string"},
+            "effort": {"type": "string", "enum": ["low", "medium", "high"]},
+            "impact": {"type": "string", "enum": ["low", "medium", "high"]},
+            "priority": {"type": "integer", "minimum": 1, "maximum": 10}
+          }
+        }
+      },
+      "quick_wins": {
+        "type": "array",
+        "description": "Mejoras de alto impacto y bajo esfuerzo para implementar primero",
+        "items": {"type": "string"}
+      },
+      "implementation_plan": {
+        "type": "object",
+        "properties": {
+          "phase_1_immediate": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "phase_2_short_term": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "phase_3_long_term": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "required": ["executive_summary", "optimizations", "quick_wins"]
+  },
+  
+  "examples": [
+    {
+      "input": {
+        "workflow_name": "WhatsApp Customer Support Bot",
+        "workflow_description": "Recibe mensajes de WhatsApp, consulta Claude API para cada mensaje, busca en BD, responde al cliente",
+        "current_problems": ["Lento (5-8 segundos de respuesta)", "Costoso ($300/mes en API calls)", "Falla cuando BD está lenta"],
+        "execution_frequency": "500 mensajes/día",
+        "current_execution_time": "6 segundos promedio",
+        "priority": "all"
+      },
+      "output_summary": "7 optimizaciones identificadas. Quick wins: (1) Implementar prompt caching → ahorro 70% costos, (2) Queries paralelas → reducción 40% tiempo. Expected: 2.5s execution time, $100/mes cost, 99.8% reliability."
+    }
+  ],
+  
+  "tags": ["n8n", "optimization", "performance", "cost-reduction", "automation"],
+  "estimated_execution_time": "8-12 minutes",
+  "model_recommendation": "claude-sonnet-4.5",
+  "use_extended_thinking": true,
+  "mcp_required": ["n8n-mcp"]
+}
+
