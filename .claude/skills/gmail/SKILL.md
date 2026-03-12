@@ -1,12 +1,18 @@
 ---
 name: gmail
-description: Read and search Gmail inbox, read full emails using Gmail API. Use when user needs to check email or search messages.
+description: Read and search Gmail inbox, manage drafts, organize with labels, and create filters. Use when user needs to check email, compose drafts, or organize messages.
 allowed-tools: Bash, Read
 ---
 
 # Gmail API
 
-Read inbox, search emails, and read full messages via Python script.
+Read inbox, search emails, manage drafts, labels, and filters via Python script.
+
+## Guardrails
+
+- **NEVER send emails directly.** `send` and `draft-send` are disabled.
+- To compose an email, use `draft-create`. User reviews and sends manually from Gmail.
+- Always confirm with user before creating a draft on their behalf.
 
 ## Prerequisites
 
@@ -19,11 +25,6 @@ Read inbox, search emails, and read full messages via Python script.
 ```bash
 python scripts/gmail_handler.py setup
 ```
-
-This prints instructions for:
-1. Creating Google Cloud OAuth credentials
-2. Enabling Gmail API
-3. Getting refresh token via OAuth Playground
 
 ## Quick Commands
 
@@ -39,6 +40,48 @@ python scripts/gmail_handler.py read <message_id>
 
 # List labels
 python scripts/gmail_handler.py labels
+```
+
+## Drafts (safe - does NOT send)
+
+```bash
+# List drafts
+python scripts/gmail_handler.py drafts [--limit=10]
+
+# Create draft
+python scripts/gmail_handler.py draft-create <to> <subject> <body>
+
+# Update draft
+python scripts/gmail_handler.py draft-update <draft_id> [--to=x] [--subject=y] [--body=z]
+
+# Update with stdin body
+echo "body" | python scripts/gmail_handler.py draft-update <draft_id> --subject=x --body-stdin
+
+# Delete draft
+python scripts/gmail_handler.py draft-delete <draft_id>
+```
+
+## Labels & Organization
+
+```bash
+# Create label
+python scripts/gmail_handler.py create-label <name>
+
+# Apply label to messages
+python scripts/gmail_handler.py apply-label <labelId> <msgId1> [msgId2...]
+
+# Organize: find/create label + search + apply to all matching
+python scripts/gmail_handler.py organize "Label Name" "search query"
+```
+
+## Filters
+
+```bash
+# Create auto-filter (find/create label + set filter)
+python scripts/gmail_handler.py create-filter "Label Name" "from:example.com"
+
+# List existing filters
+python scripts/gmail_handler.py list-filters
 ```
 
 ## Gmail Search Operators
@@ -66,51 +109,20 @@ python scripts/gmail_handler.py search "subject:Invoice after:2025/01/01"
 
 # Read specific email
 python scripts/gmail_handler.py read 18d5a2b3c4d5e6f7
+
+# Create a draft (user reviews and sends)
+python scripts/gmail_handler.py draft-create "team@publica.la" "Update" "Status report"
+
+# Organize all Vercel emails under a label
+python scripts/gmail_handler.py organize "Vercel" "from:vercel.com"
+
+# Auto-filter future Linear emails
+python scripts/gmail_handler.py create-filter "Linear" "from:linear.app"
 ```
 
 ## Output Format
 
-All commands return JSON:
-
-```json
-{
-  "success": true,
-  "data": {...}
-}
-```
-
-### inbox/search
-```json
-{
-  "count": 5,
-  "query": "in:inbox is:unread",
-  "messages": [
-    {
-      "id": "abc123",
-      "from": "sender@example.com",
-      "to": "me@example.com",
-      "subject": "Hello",
-      "date": "Mon, 20 Jan 2025 10:00:00 -0300",
-      "snippet": "Preview text...",
-      "labels": ["INBOX", "UNREAD"]
-    }
-  ]
-}
-```
-
-### read
-```json
-{
-  "id": "abc123",
-  "threadId": "thread123",
-  "from": "sender@example.com",
-  "to": "me@example.com",
-  "subject": "Hello",
-  "date": "Mon, 20 Jan 2025 10:00:00 -0300",
-  "labels": ["INBOX"],
-  "body": "Full email content..."
-}
-```
+All commands return JSON with `{success, data}` wrapper.
 
 ## Common Errors
 

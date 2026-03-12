@@ -204,14 +204,19 @@ Mentat:
   3. If yes, delegate Kokoro first
 ```
 
-### Acceptance Criteria Not Met
+### Acceptance Criteria Not Met — Rewind > Fix Rule
 
 ```
 Mentat validates criteria after agent completion.
 If not met:
-  1. Ask agent to fix specific criteria
-  2. Re-delegate with feedback
-  3. Only mark Done when all criteria pass
+  1. STOP — do NOT patch the bad output
+  2. Identify what's wrong with the spec/prompt
+  3. Improve the spec (sub-issue description, context, criteria)
+  4. Re-delegate from scratch with improved spec
+  5. Only mark Done when all criteria pass
+
+NEVER patch agent output. Always rewind to better spec.
+Rationale: patching compounds tech debt. Better specs = better output.
 ```
 
 ### Agent Question

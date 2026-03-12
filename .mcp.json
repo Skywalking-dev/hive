@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "google-workspace": {
+      "command": "gws",
+      "args": ["mcp", "-s", "drive,gmail,calendar,docs,sheets,tasks,chat", "-e", "-w", "--tool-mode", "compact"]
+    }
+  }
+}

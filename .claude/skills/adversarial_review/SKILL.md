@@ -106,9 +106,14 @@ Mentat should invoke Mycelium (via `/debate` with `mycelium` agent) when:
 
 # Mycelium - for PRD or System Architecture review
 /debate path/to/document.md mycelium
+
+# Code Review mode (LLM-as-Judge) - for agent output review
+/debate --code-review SKY-123       # review changes from a Linear issue
+/debate --code-review HEAD~3        # review last 3 commits
+/debate --code-review path/to/file  # review specific file
 ```
 
-**Process:**
+**Process (document mode):**
 1. Mentat prepares document for review (must be >70% complete)
 2. Determines target agent (Forge or Mycelium) based on document type
 3. Invokes agent via `/debate` command
@@ -116,6 +121,14 @@ Mentat should invoke Mycelium (via `/debate` with `mycelium` agent) when:
 5. Mentat incorporates feedback into document
 6. Mentat deletes temporary feedback file
 7. Mentat presents refined document to user
+
+**Process (code-review mode):**
+1. Mentat collects diff (from Linear issue, commits, or file)
+2. Mentat collects spec/AC from Linear issue (if available)
+3. Invokes Forge with diff + spec context
+4. Forge reviews: security, quality, spec adherence, architecture
+5. Mentat presents findings and recommends fix or approve
+6. If issues found → agent re-delegated with improved spec (Rewind > Fix)
 
 **Use for:**
 - **Forge:** PRDs, architecture docs, implementation plans, technical proposals, code review
@@ -314,6 +327,31 @@ User: "Revisa este código antes de merge a producción"
 → Mentat incorporates feedback
 → Presents refined code to user
 ```
+
+### Example 4: LLM-as-Judge (Post-Agent Code Review)
+
+```
+Pixel completes SKY-47: WhatsAppButton component
+→ Mentat validates acceptance criteria: 3/3 met
+→ Feature is critical (customer-facing) → triggers code review
+→ Invokes: /debate --code-review SKY-47
+→ Mentat collects:
+  - Git diff from Pixel's branch
+  - Acceptance criteria from SKY-47 description
+  - Relevant contracts (DESIGN_CONTRACT, TEST_ID_CONTRACT)
+→ Forge reviews:
+  - Security: No XSS vectors, no hardcoded secrets ✅
+  - Quality: No duplicated logic, clean component structure ✅
+  - Spec adherence: All AC met, test IDs present ✅
+  - Architecture: Follows existing component patterns ✅
+→ Forge verdict: APPROVE with minor suggestions
+→ Mentat marks SKY-47 Done, proceeds to Sentinela
+```
+
+**When to trigger code-review mode:**
+- Features touching auth, payments, or user data → **mandatory**
+- Agent output with >500 LOC changed → **recommended**
+- Standard UI/CRUD → **optional** (Sentinela E2E is sufficient)
 
 ## Anti-patterns
 

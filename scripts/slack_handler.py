@@ -9,10 +9,15 @@ import sys
 import json
 import re
 import argparse
+from pathlib import Path
 from typing import Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlencode
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 SLACK_API_BASE = "https://slack.com/api"
 

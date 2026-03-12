@@ -18,6 +18,11 @@
 - Priority/Severity
 - Additional context (screenshots, logs)
 
+**Batch 5 (Technical Context):**
+- Relevant code paths / components affected
+- Recent changes that may have caused the issue
+- Security implications (if any)
+
 ## Description Template
 
 ```markdown
@@ -39,6 +44,11 @@
 3. {step}
 
 **Frequency:** {Always|Sometimes|Rarely}
+
+## Technical Context
+- **Affected code:** {paths, components, APIs}
+- **Recent changes:** {commits, deploys that may relate}
+- **Security:** {implications if any}
 
 ## Additional Context
 {screenshots, logs, related issues}

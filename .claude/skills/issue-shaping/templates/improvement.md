@@ -14,6 +14,11 @@
 - Success metric (quantifiable)
 - Priority: High / Medium / Low
 
+**Batch 4 (Technical Context):**
+- Relevant architectural patterns to consider
+- Existing implementations to reuse or extend
+- Security/performance constraints
+
 **Optional:**
 - Scope boundaries (what's NOT included)
 - Dependencies
@@ -35,6 +40,11 @@
 
 ## Success Metric
 {measurable outcome}
+
+## Technical Context
+- **Architecture:** {relevant patterns, existing structure}
+- **Reuse:** {implementations to extend}
+- **Security:** {constraints, performance requirements}
 
 ## Additional Context
 {scope, dependencies, technical notes}
