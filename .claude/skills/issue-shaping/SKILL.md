@@ -72,10 +72,26 @@ linear_createIssue:
 
 1. Ask type → load template
 2. Follow template's discovery questions (batches of 2-3)
-3. Check duplicates: `linear_searchIssues`
-4. Create parent issue using template
-5. Optionally add agent sub-issues (or defer to `/refine`)
-6. Confirm with Linear URL
+3. **Validate scope:** If >5 acceptance criteria, warn and suggest split (see below)
+4. Check duplicates: `linear_searchIssues`
+5. Create parent issue using template
+6. Optionally add agent sub-issues (or defer to `/refine`)
+7. Confirm with Linear URL
+
+## Scope Validation (Anti-Waterfall Check)
+
+After collecting acceptance criteria, count them. If >5 AC:
+
+**Warning to user:**
+> "This spec has {N} acceptance criteria. Specs with >5 AC tend to produce imprecise agent output and higher costs. Consider splitting into 2+ focused issues."
+
+**Then:**
+1. Suggest logical grouping for split (e.g., by user flow, by component, by agent)
+2. Ask user: "Split into smaller issues or continue as-is?"
+3. If split → create multiple issues with subset of AC each
+4. If continue → proceed but add label or note: `large-scope`
+
+**Rationale:** Large specs = waterfall disguised as agile. Smaller specs produce better agent output, lower cost, faster feedback loops.
 
 ## Next Steps
 

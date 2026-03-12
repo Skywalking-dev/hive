@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Gate.io API v4 handler for Hive.
-Spot: prices, balances, orders, trades, klines.
+Spot + Futures (USDT perps) + Earn (UniLoan, Dual Investment).
 """
 
 import os
@@ -11,15 +11,20 @@ import time
 import hmac
 import hashlib
 import argparse
+from pathlib import Path
 from typing import Optional
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 # --- Config ---
 
 BASE_URL = "https://api.gateio.ws/api/v4"
+SETTLE = "usdt"
 
 
 def get_config() -> tuple[str, str]:
@@ -75,7 +80,12 @@ def public_call(path: str, params: Optional[dict] = None) -> dict:
         return {"success": False, "error": str(e)}
 
 
-def signed_call(path: str, method: str = "GET", query: Optional[dict] = None, body: Optional[dict] = None) -> dict:
+def signed_call(
+    path: str,
+    method: str = "GET",
+    query: Optional[dict] = None,
+    body: Optional[dict] = None,
+) -> dict:
     """Authenticated request with HMAC-SHA512 signature."""
     query_string = urlencode(query) if query else ""
     body_string = json.dumps(body) if body else ""
@@ -91,7 +101,10 @@ def signed_call(path: str, method: str = "GET", query: Optional[dict] = None, bo
     req = Request(url, data=data, headers=headers, method=method)
     try:
         with urlopen(req, timeout=30) as resp:
-            return {"success": True, "data": json.loads(resp.read().decode("utf-8"))}
+            resp_body = resp.read().decode("utf-8")
+            if not resp_body:
+                return {"success": True, "data": None}
+            return {"success": True, "data": json.loads(resp_body)}
     except HTTPError as e:
         err_body = e.read().decode("utf-8")
         try:
@@ -104,7 +117,9 @@ def signed_call(path: str, method: str = "GET", query: Optional[dict] = None, bo
         return {"success": False, "error": str(e)}
 
 
-# --- Public endpoints ---
+# ============================================================
+# SPOT - Public endpoints
+# ============================================================
 
 def get_price(pair: str) -> dict:
     """Current price for a pair."""
@@ -175,7 +190,9 @@ def get_orderbook(pair: str, limit: int = 10) -> dict:
     return public_call("/spot/order_book", {"currency_pair": pair.upper(), "limit": limit})
 
 
-# --- Private endpoints ---
+# ============================================================
+# SPOT - Private endpoints
+# ============================================================
 
 def get_balance() -> dict:
     """Spot account balances (non-zero only)."""
@@ -229,64 +246,348 @@ def cancel_order(pair: str, order_id: str) -> dict:
     return signed_call(f"/spot/orders/{order_id}", method="DELETE", query={"currency_pair": pair.upper()})
 
 
-# --- CLI ---
+# ============================================================
+# FUTURES - Public endpoints (USDT-settled perps)
+# ============================================================
+
+def get_futures_price(contract: str) -> dict:
+    """Current futures price."""
+    result = public_call(f"/futures/{SETTLE}/tickers", {"contract": contract.upper()})
+    if not result["success"]:
+        return result
+    tickers = result["data"]
+    if tickers:
+        t = tickers[0]
+        return {"success": True, "data": {
+            "contract": t["contract"],
+            "last": t["last"],
+            "mark_price": t.get("mark_price"),
+            "index_price": t.get("index_price"),
+            "funding_rate": t.get("funding_rate"),
+        }}
+    return {"success": False, "error": f"Contract {contract} not found"}
+
+
+def get_futures_ticker(contract: str) -> dict:
+    """24h futures ticker stats."""
+    result = public_call(f"/futures/{SETTLE}/tickers", {"contract": contract.upper()})
+    if not result["success"]:
+        return result
+    tickers = result["data"]
+    if tickers:
+        return {"success": True, "data": tickers[0]}
+    return {"success": False, "error": f"Contract {contract} not found"}
+
+
+def get_futures_klines(contract: str, interval: str, limit: int = 100) -> dict:
+    """Futures candlestick data."""
+    result = public_call(f"/futures/{SETTLE}/candlesticks", {
+        "contract": contract.upper(),
+        "interval": interval,
+        "limit": limit,
+    })
+    if not result["success"]:
+        return result
+
+    candles = [
+        {
+            "time": c.get("t"),
+            "open": c.get("o"),
+            "high": c.get("h"),
+            "low": c.get("l"),
+            "close": c.get("c"),
+            "volume": c.get("v"),
+            "notional": c.get("sum"),
+        }
+        for c in result["data"]
+    ]
+    return {"success": True, "data": {"contract": contract.upper(), "interval": interval, "candles": candles}}
+
+
+def get_futures_orderbook(contract: str, limit: int = 10) -> dict:
+    """Futures order book depth."""
+    return public_call(f"/futures/{SETTLE}/order_book", {"contract": contract.upper(), "limit": limit})
+
+
+def get_funding_rate(contract: str, limit: int = 10) -> dict:
+    """Historical funding rates."""
+    return public_call(f"/futures/{SETTLE}/funding_rate", {"contract": contract.upper(), "limit": limit})
+
+
+# ============================================================
+# FUTURES - Private endpoints
+# ============================================================
+
+def get_futures_balance() -> dict:
+    """Futures account balance."""
+    return signed_call(f"/futures/{SETTLE}/accounts")
+
+
+def get_positions() -> dict:
+    """Open futures positions (non-zero only)."""
+    result = signed_call(f"/futures/{SETTLE}/positions")
+    if not result["success"]:
+        return result
+
+    positions = [
+        {
+            "contract": p["contract"],
+            "size": p["size"],
+            "leverage": p["leverage"],
+            "entry_price": p["entry_price"],
+            "mark_price": p["mark_price"],
+            "liq_price": p["liq_price"],
+            "unrealised_pnl": p["unrealised_pnl"],
+            "margin": p["margin"],
+            "mode": p.get("mode", "single"),
+        }
+        for p in result["data"]
+        if p["size"] != 0
+    ]
+    return {"success": True, "data": {"count": len(positions), "positions": positions}}
+
+
+def get_futures_orders(contract: Optional[str] = None) -> dict:
+    """Open futures orders."""
+    query = {"status": "open"}
+    if contract:
+        query["contract"] = contract.upper()
+    return signed_call(f"/futures/{SETTLE}/orders", query=query)
+
+
+def get_futures_trades(contract: str) -> dict:
+    """My futures trades."""
+    return signed_call(f"/futures/{SETTLE}/my_trades", query={"contract": contract.upper()})
+
+
+def place_futures_order(
+    contract: str, size: int, price: str = "0", tif: str = "gtc",
+    reduce_only: bool = False,
+) -> dict:
+    """Place a futures order. size>0=long, size<0=short. price=0 for market."""
+    body = {
+        "contract": contract.upper(),
+        "size": size,
+        "price": price,
+        "tif": tif,
+    }
+    if reduce_only:
+        body["reduce_only"] = True
+    if price == "0":
+        body["tif"] = "ioc"
+    return signed_call(f"/futures/{SETTLE}/orders", method="POST", body=body)
+
+
+def cancel_futures_order(order_id: str) -> dict:
+    """Cancel a futures order."""
+    return signed_call(f"/futures/{SETTLE}/orders/{order_id}", method="DELETE")
+
+
+def set_leverage(contract: str, leverage: int) -> dict:
+    """Set leverage. 0=cross, >0=isolated with that multiplier."""
+    return signed_call(
+        f"/futures/{SETTLE}/positions/{contract.upper()}/leverage",
+        method="POST",
+        query={"leverage": str(leverage)},
+    )
+
+
+# ============================================================
+# EARN - UniLoan (Simple Earn / Flexible Lending)
+# ============================================================
+
+def get_earn_products(currency: Optional[str] = None) -> dict:
+    """List available earn currencies/products."""
+    if currency:
+        return public_call(f"/earn/uni/currencies/{currency.upper()}")
+    return public_call("/earn/uni/currencies")
+
+
+def get_earn_positions(currency: Optional[str] = None) -> dict:
+    """Current earn lending positions."""
+    query = {}
+    if currency:
+        query["currency"] = currency.upper()
+    return signed_call("/earn/uni/lends", query=query if query else None)
+
+
+def earn_lend(currency: str, amount: str, min_rate: Optional[str] = None) -> dict:
+    """Lend to earn (subscribe)."""
+    body = {"currency": currency.upper(), "amount": amount, "type": "lend"}
+    if min_rate:
+        body["min_rate"] = min_rate
+    return signed_call("/earn/uni/lends", method="POST", body=body)
+
+
+def earn_redeem(currency: str, amount: str) -> dict:
+    """Redeem from earn."""
+    body = {"currency": currency.upper(), "amount": amount, "type": "redeem"}
+    return signed_call("/earn/uni/lends", method="POST", body=body)
+
+
+def get_earn_interest(currency: Optional[str] = None) -> dict:
+    """Earn interest records."""
+    query = {}
+    if currency:
+        query["currency"] = currency.upper()
+    return signed_call("/earn/uni/interest_records", query=query if query else None)
+
+
+def get_earn_lend_records(currency: Optional[str] = None) -> dict:
+    """Earn lend/redeem transaction history."""
+    query = {}
+    if currency:
+        query["currency"] = currency.upper()
+    return signed_call("/earn/uni/lend_records", query=query if query else None)
+
+
+# ============================================================
+# EARN - Dual Investment
+# ============================================================
+
+def get_dual_products() -> dict:
+    """List available dual investment plans."""
+    return signed_call("/earn/dual/investment_plan")
+
+
+def place_dual_order(plan_id: str, amount: str) -> dict:
+    """Subscribe to a dual investment plan."""
+    body = {"plan_id": plan_id, "amount": amount}
+    return signed_call("/earn/dual/orders", method="POST", body=body)
+
+
+def get_dual_orders() -> dict:
+    """List dual investment orders (active + history)."""
+    return signed_call("/earn/dual/orders")
+
+
+# ============================================================
+# CLI
+# ============================================================
 
 def main():
-    parser = argparse.ArgumentParser(description="Gate.io API v4 handler")
+    parser = argparse.ArgumentParser(description="Gate.io API v4 handler — Spot + Futures + Earn")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Price
-    price_p = subparsers.add_parser("price", help="Get current price")
+    # --- Spot public ---
+    price_p = subparsers.add_parser("price", help="Spot price")
     price_p.add_argument("pair", help="Trading pair (e.g. BTC_USDT)")
 
-    # Prices
-    prices_p = subparsers.add_parser("prices", help="List all prices")
-    prices_p.add_argument("--filter", help="Filter by substring (e.g. BTC)")
+    prices_p = subparsers.add_parser("prices", help="List all spot prices")
+    prices_p.add_argument("--filter", help="Filter by substring")
 
-    # Ticker
-    ticker_p = subparsers.add_parser("ticker", help="24h ticker stats")
+    ticker_p = subparsers.add_parser("ticker", help="24h spot ticker")
     ticker_p.add_argument("pair", help="Trading pair")
 
-    # Klines
-    klines_p = subparsers.add_parser("klines", help="Candlestick data")
+    klines_p = subparsers.add_parser("klines", help="Spot candlesticks")
     klines_p.add_argument("pair", help="Trading pair")
-    klines_p.add_argument("interval", help="Interval (10s,1m,5m,15m,30m,1h,4h,8h,1d,7d,30d)")
-    klines_p.add_argument("--limit", type=int, default=100, help="Number of candles")
+    klines_p.add_argument("interval", help="10s,1m,5m,15m,30m,1h,4h,8h,1d,7d,30d")
+    klines_p.add_argument("--limit", type=int, default=100)
 
-    # Orderbook
-    book_p = subparsers.add_parser("orderbook", help="Order book depth")
+    book_p = subparsers.add_parser("orderbook", help="Spot order book")
     book_p.add_argument("pair", help="Trading pair")
-    book_p.add_argument("--limit", type=int, default=10, help="Depth levels")
+    book_p.add_argument("--limit", type=int, default=10)
 
-    # Balance
+    # --- Spot private ---
     subparsers.add_parser("balance", help="Spot balances")
 
-    # Open orders
     orders_p = subparsers.add_parser("orders", help="Open spot orders")
     orders_p.add_argument("--pair", help="Filter by pair")
 
-    # My trades
-    trades_p = subparsers.add_parser("trades", help="Recent trades")
+    trades_p = subparsers.add_parser("trades", help="Recent spot trades")
     trades_p.add_argument("pair", help="Trading pair")
 
-    # Place order
     spot_order_p = subparsers.add_parser("spot-order", help="Place spot order")
     spot_order_p.add_argument("pair", help="Trading pair")
-    spot_order_p.add_argument("side", choices=["buy", "sell"], help="Order side")
-    spot_order_p.add_argument("type", choices=["market", "limit"], help="Order type")
+    spot_order_p.add_argument("side", choices=["buy", "sell"])
+    spot_order_p.add_argument("type", choices=["market", "limit"])
     spot_order_p.add_argument("amount", help="Order amount")
     spot_order_p.add_argument("--price", help="Limit price")
 
-    # Cancel order
     cancel_p = subparsers.add_parser("cancel", help="Cancel spot order")
     cancel_p.add_argument("pair", help="Trading pair")
     cancel_p.add_argument("order_id", help="Order ID")
+
+    # --- Futures public ---
+    fp_p = subparsers.add_parser("futures-price", help="Futures price")
+    fp_p.add_argument("contract", help="Contract (e.g. BTC_USDT)")
+
+    ft_p = subparsers.add_parser("futures-ticker", help="24h futures ticker")
+    ft_p.add_argument("contract", help="Contract")
+
+    fk_p = subparsers.add_parser("futures-klines", help="Futures candlesticks")
+    fk_p.add_argument("contract", help="Contract")
+    fk_p.add_argument("interval", help="10s,1m,5m,15m,30m,1h,4h,8h,1d,7d")
+    fk_p.add_argument("--limit", type=int, default=100)
+
+    fob_p = subparsers.add_parser("futures-orderbook", help="Futures order book")
+    fob_p.add_argument("contract", help="Contract")
+    fob_p.add_argument("--limit", type=int, default=10)
+
+    fr_p = subparsers.add_parser("funding-rate", help="Funding rate history")
+    fr_p.add_argument("contract", help="Contract")
+    fr_p.add_argument("--limit", type=int, default=10)
+
+    # --- Futures private ---
+    subparsers.add_parser("futures-balance", help="Futures account balance")
+    subparsers.add_parser("positions", help="Open futures positions")
+
+    fo_p = subparsers.add_parser("futures-orders", help="Open futures orders")
+    fo_p.add_argument("--contract", help="Filter by contract")
+
+    ftr_p = subparsers.add_parser("futures-trades", help="My futures trades")
+    ftr_p.add_argument("contract", help="Contract")
+
+    forder_p = subparsers.add_parser("futures-order", help="Place futures order")
+    forder_p.add_argument("contract", help="Contract")
+    forder_p.add_argument("size", type=int, help="Contracts: >0 long, <0 short")
+    forder_p.add_argument("--price", default="0", help="Price (0=market)")
+    forder_p.add_argument("--tif", default="gtc", choices=["gtc", "ioc", "poc"])
+    forder_p.add_argument("--reduce-only", action="store_true")
+
+    fcancel_p = subparsers.add_parser("futures-cancel", help="Cancel futures order")
+    fcancel_p.add_argument("order_id", help="Order ID")
+
+    lev_p = subparsers.add_parser("set-leverage", help="Set futures leverage")
+    lev_p.add_argument("contract", help="Contract")
+    lev_p.add_argument("leverage", type=int, help="0=cross, >0=isolated")
+
+    # --- Earn: UniLoan ---
+    ep_p = subparsers.add_parser("earn-products", help="Earn available currencies")
+    ep_p.add_argument("--currency", help="Filter by currency")
+
+    epos_p = subparsers.add_parser("earn-positions", help="Current earn positions")
+    epos_p.add_argument("--currency", help="Filter by currency")
+
+    elend_p = subparsers.add_parser("earn-lend", help="Lend to earn")
+    elend_p.add_argument("currency", help="Currency (e.g. USDT)")
+    elend_p.add_argument("amount", help="Amount to lend")
+    elend_p.add_argument("--min-rate", help="Min hourly rate")
+
+    eredeem_p = subparsers.add_parser("earn-redeem", help="Redeem from earn")
+    eredeem_p.add_argument("currency", help="Currency")
+    eredeem_p.add_argument("amount", help="Amount to redeem")
+
+    ei_p = subparsers.add_parser("earn-interest", help="Earn interest records")
+    ei_p.add_argument("--currency", help="Filter by currency")
+
+    ehr_p = subparsers.add_parser("earn-history", help="Earn lend/redeem history")
+    ehr_p.add_argument("--currency", help="Filter by currency")
+
+    # --- Earn: Dual Investment ---
+    subparsers.add_parser("dual-products", help="Dual investment plans")
+
+    do_p = subparsers.add_parser("dual-order", help="Subscribe to dual plan")
+    do_p.add_argument("plan_id", help="Plan ID")
+    do_p.add_argument("amount", help="Amount")
+
+    subparsers.add_parser("dual-orders", help="Dual investment orders")
 
     args = parser.parse_args()
 
     try:
         match args.command:
-            # Public
+            # Spot public
             case "price":
                 result = get_price(args.pair)
             case "prices":
@@ -297,7 +598,7 @@ def main():
                 result = get_klines(args.pair, args.interval, args.limit)
             case "orderbook":
                 result = get_orderbook(args.pair, args.limit)
-            # Private
+            # Spot private
             case "balance":
                 result = get_balance()
             case "orders":
@@ -308,6 +609,54 @@ def main():
                 result = place_order(args.pair, args.side, args.type, args.amount, args.price)
             case "cancel":
                 result = cancel_order(args.pair, args.order_id)
+            # Futures public
+            case "futures-price":
+                result = get_futures_price(args.contract)
+            case "futures-ticker":
+                result = get_futures_ticker(args.contract)
+            case "futures-klines":
+                result = get_futures_klines(args.contract, args.interval, args.limit)
+            case "futures-orderbook":
+                result = get_futures_orderbook(args.contract, args.limit)
+            case "funding-rate":
+                result = get_funding_rate(args.contract, args.limit)
+            # Futures private
+            case "futures-balance":
+                result = get_futures_balance()
+            case "positions":
+                result = get_positions()
+            case "futures-orders":
+                result = get_futures_orders(args.contract)
+            case "futures-trades":
+                result = get_futures_trades(args.contract)
+            case "futures-order":
+                result = place_futures_order(
+                    args.contract, args.size, args.price, args.tif, args.reduce_only,
+                )
+            case "futures-cancel":
+                result = cancel_futures_order(args.order_id)
+            case "set-leverage":
+                result = set_leverage(args.contract, args.leverage)
+            # Earn: UniLoan
+            case "earn-products":
+                result = get_earn_products(args.currency)
+            case "earn-positions":
+                result = get_earn_positions(args.currency)
+            case "earn-lend":
+                result = earn_lend(args.currency, args.amount, args.min_rate)
+            case "earn-redeem":
+                result = earn_redeem(args.currency, args.amount)
+            case "earn-interest":
+                result = get_earn_interest(args.currency)
+            case "earn-history":
+                result = get_earn_lend_records(args.currency)
+            # Earn: Dual Investment
+            case "dual-products":
+                result = get_dual_products()
+            case "dual-order":
+                result = place_dual_order(args.plan_id, args.amount)
+            case "dual-orders":
+                result = get_dual_orders()
             case _:
                 result = {"success": False, "error": "Unknown command"}
     except ValueError as e:

@@ -15,6 +15,7 @@ Hive es el repositorio central de AI tooling para Skywalking. Provee commands, s
 | Vercel | Deployments, Serverless |
 | WhatsApp | Business messaging |
 | Slack | Team communication |
+| gws (Google Workspace CLI) | All Google APIs via CLI + MCP (Sheets, Tasks, Chat, etc.) |
 
 ## Architecture
 
@@ -24,7 +25,7 @@ hive/
 │   ├── commands/     ← flujos guiados (slash commands)
 │   └── skills/       ← conocimiento contextual
 ├── scripts/          ← conectores Python (API/CLI)
-├── .mcp.json         ← MCP servers config
+├── .mcp.json         ← MCP servers config (gws, n8n, etc.)
 └── release.py        ← propagación multi-provider
 ```
 
@@ -48,6 +49,7 @@ python release.py
 /supabase <query>
 /vercel logs <deployment>
 /whatsapp send <number> <message>
+/gws sheets spreadsheets.values get --params '{"spreadsheetId": "ID", "range": "A1:D10"}'
 ```
 
 ## Development

@@ -14,8 +14,12 @@
 - Success criteria (acceptance criteria)
 - Priority: High / Medium / Low
 
+**Batch 4 (Technical Context):**
+- Relevant architectural patterns (e.g., existing API structure, DB schema)
+- Existing implementations to reuse or reference
+- Security/compliance constraints
+
 **Optional:**
-- Technical constraints
 - Related issues
 
 ## Description Template
@@ -29,6 +33,11 @@
 
 ## User Story
 As a {user type}, I want to {action} so that {benefit}.
+
+## Technical Context
+- **Architecture:** {relevant patterns, existing structure}
+- **Reuse:** {existing implementations to reference}
+- **Security:** {constraints, compliance requirements}
 
 ## Acceptance Criteria
 - [ ] {criterion 1}
