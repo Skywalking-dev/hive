@@ -11,6 +11,7 @@
 - Why important now
 
 **Batch 3:**
+- Acceptance criteria (use EARS syntax — see below)
 - Success metric (quantifiable)
 - Priority: High / Medium / Low
 
@@ -22,6 +23,19 @@
 **Optional:**
 - Scope boundaries (what's NOT included)
 - Dependencies
+
+## EARS Syntax Guide
+
+Write each acceptance criterion using one of these patterns:
+
+| Pattern | Syntax |
+|---------|--------|
+| Always true | `THE SYSTEM SHALL [capability]` |
+| Event-driven | `WHEN [event] THE SYSTEM SHALL [response]` |
+| State-driven | `WHILE [state] THE SYSTEM SHALL [behavior]` |
+| Conditional | `IF [condition] THE SYSTEM SHALL [action]` |
+
+Mark ambiguous items with `[NEEDS CLARIFICATION: question]`.
 
 ## Description Template
 
@@ -38,6 +52,11 @@
 ## Proposed State
 {how it should work after improvement}
 
+## Acceptance Criteria (EARS)
+- [ ] WHEN {event} THE SYSTEM SHALL {response}
+- [ ] THE SYSTEM SHALL {capability}
+- [ ] IF {condition} THE SYSTEM SHALL {action}
+
 ## Success Metric
 {measurable outcome}
 
@@ -45,6 +64,9 @@
 - **Architecture:** {relevant patterns, existing structure}
 - **Reuse:** {implementations to extend}
 - **Security:** {constraints, performance requirements}
+
+## Open Questions
+- [NEEDS CLARIFICATION: {ambiguous aspect}]
 
 ## Additional Context
 {scope, dependencies, technical notes}

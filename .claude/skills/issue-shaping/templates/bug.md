@@ -8,7 +8,7 @@
 
 **Batch 2:**
 - Current (broken) behavior
-- Expected behavior
+- Expected behavior (use EARS — see below)
 
 **Batch 3:**
 - Reproduction steps (numbered)
@@ -23,6 +23,18 @@
 - Recent changes that may have caused the issue
 - Security implications (if any)
 
+## EARS for Bug Fix Criteria
+
+Write expected behavior using EARS patterns:
+
+| Pattern | Syntax |
+|---------|--------|
+| Always true | `THE SYSTEM SHALL [capability]` |
+| Event-driven | `WHEN [event] THE SYSTEM SHALL [response]` |
+| Conditional | `IF [condition] THE SYSTEM SHALL [action]` |
+
+Mark unknowns with `[NEEDS CLARIFICATION: question]`.
+
 ## Description Template
 
 ```markdown
@@ -35,8 +47,9 @@
 ## Current Behavior
 {what's happening - broken state}
 
-## Expected Behavior
-{what should happen - correct state}
+## Expected Behavior (EARS)
+- WHEN {event} THE SYSTEM SHALL {correct response}
+- THE SYSTEM SHALL {expected capability}
 
 ## Reproduction Steps
 1. {step}
@@ -49,6 +62,9 @@
 - **Affected code:** {paths, components, APIs}
 - **Recent changes:** {commits, deploys that may relate}
 - **Security:** {implications if any}
+
+## Open Questions
+- [NEEDS CLARIFICATION: {unclear aspect}]
 
 ## Additional Context
 {screenshots, logs, related issues}

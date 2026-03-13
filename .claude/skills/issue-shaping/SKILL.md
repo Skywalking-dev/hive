@@ -68,15 +68,34 @@ linear_createIssue:
   # NO assigneeId - [Agent] prefix is sufficient
 ```
 
+## EARS Syntax (for Acceptance Criteria)
+
+All acceptance criteria MUST use EARS (Easy Approach to Requirements Syntax):
+
+| Pattern | Syntax | Example |
+|---------|--------|---------|
+| Always | `THE SYSTEM SHALL [capability]` | The system shall encrypt all passwords |
+| Event | `WHEN [event] THE SYSTEM SHALL [response]` | When user clicks "buy", the system shall create an order |
+| State | `WHILE [state] THE SYSTEM SHALL [behavior]` | While offline, the system shall queue mutations |
+| Conditional | `IF [condition] THE SYSTEM SHALL [action]` | If cart > $100, the system shall apply free shipping |
+| Complex | `WHEN [event] WHILE [state] IF [condition] THE SYSTEM SHALL [response]` | Combined patterns |
+
+**Rules:**
+- No "should", "could", "ideally" — only SHALL
+- Each criterion must be independently testable
+- Mark ambiguous items with `[NEEDS CLARIFICATION: question]`
+
 ## Flow
 
 1. Ask type → load template
 2. Follow template's discovery questions (batches of 2-3)
-3. **Validate scope:** If >5 acceptance criteria, warn and suggest split (see below)
-4. Check duplicates: `linear_searchIssues`
-5. Create parent issue using template
-6. Optionally add agent sub-issues (or defer to `/refine`)
-7. Confirm with Linear URL
+3. **Write AC in EARS syntax** — convert user's free-text criteria to EARS format
+4. **Validate scope:** If >5 acceptance criteria, warn and suggest split (see below)
+5. **Flag ambiguities:** Add `[NEEDS CLARIFICATION]` for anything unclear
+6. Check duplicates: `linear_searchIssues`
+7. Create parent issue using template
+8. Optionally add agent sub-issues (or defer to `/refine`)
+9. Confirm with Linear URL
 
 ## Scope Validation (Anti-Waterfall Check)
 
