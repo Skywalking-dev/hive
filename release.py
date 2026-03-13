@@ -6,7 +6,6 @@ Propagates .claude/ (source of truth) to all AI providers.
 Equivalent to Formica's release_ants.sh but in Python.
 """
 
-import os
 import sys
 import json
 import shutil
@@ -17,31 +16,20 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).parent.resolve()
 WORKSPACE_ROOT = SCRIPT_DIR.parent  # skywalking/
 HIVE_DIR = SCRIPT_DIR
-HOME_DIR = Path.home()
 
 # Source of truth
 CLAUDE_DIR = HIVE_DIR / ".claude"
-COMMANDS_DIR = CLAUDE_DIR / "commands"
 SKILLS_DIR = CLAUDE_DIR / "skills"
 
 # Target directories
+# NOTE: commands removed — skills cover all use cases
 TARGETS = {
     "workspace": {
-        ".claude/commands": COMMANDS_DIR,
         ".claude/skills": SKILLS_DIR,
-        ".cursor/commands": COMMANDS_DIR,
         ".cursor/rules": None,  # Generated from skills
-        ".agent/workflows": COMMANDS_DIR,
-        ".codex/prompts": COMMANDS_DIR,
     },
     "hive": {
-        ".cursor/commands": COMMANDS_DIR,
         ".cursor/rules": None,
-        ".agent/workflows": COMMANDS_DIR,
-        ".codex/prompts": COMMANDS_DIR,
-    },
-    "home": {
-        ".codex/prompts": COMMANDS_DIR,
     },
 }
 
@@ -143,10 +131,8 @@ def merge_mcp_configs(source: Path, target: Path):
 def confirm(skip: bool = False) -> bool:
     """Ask for user confirmation."""
     info("Planned actions:")
-    print("  - Symlink commands to Claude, Cursor, Gemini, Codex (workspace + hive)")
     print("  - Symlink skills to Claude (workspace)")
     print("  - Generate .mdc rules for Cursor from skills")
-    print("  - Symlink prompts to home ~/.codex/")
     print()
 
     if skip:
@@ -175,10 +161,6 @@ def main():
         return 1
 
     # Ensure source exists
-    if not COMMANDS_DIR.exists():
-        warn(f"Commands directory not found: {COMMANDS_DIR}")
-        return 1
-
     if not SKILLS_DIR.exists():
         warn(f"Skills directory not found: {SKILLS_DIR}")
         return 1
@@ -196,11 +178,6 @@ def main():
             continue
         link_path = HIVE_DIR / rel_path
         create_symlink(target, link_path, f"Hive {rel_path}")
-
-    # Create home symlinks
-    for rel_path, target in TARGETS["home"].items():
-        link_path = HOME_DIR / rel_path
-        create_symlink(target, link_path, f"Home {rel_path}")
 
     # Build Cursor rules from skills
     hive_rules = HIVE_DIR / ".cursor" / "rules"

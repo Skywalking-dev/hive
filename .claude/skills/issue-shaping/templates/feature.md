@@ -11,7 +11,7 @@
 - Current situation/workaround
 
 **Batch 3:**
-- Success criteria (acceptance criteria)
+- Acceptance criteria (use EARS syntax — see below)
 - Priority: High / Medium / Low
 
 **Batch 4 (Technical Context):**
@@ -21,6 +21,23 @@
 
 **Optional:**
 - Related issues
+
+## EARS Syntax Guide
+
+Write each acceptance criterion using one of these patterns:
+
+| Pattern | Syntax |
+|---------|--------|
+| Always true | `THE SYSTEM SHALL [capability]` |
+| Event-driven | `WHEN [event] THE SYSTEM SHALL [response]` |
+| State-driven | `WHILE [state] THE SYSTEM SHALL [behavior]` |
+| Conditional | `IF [condition] THE SYSTEM SHALL [action]` |
+| Complex | `WHEN [event] WHILE [state] IF [condition] THE SYSTEM SHALL [response]` |
+
+**Rules:**
+- No "should", "could", "ideally" — only SHALL (mandatory) or WILL (intent)
+- Each criterion must be independently testable
+- Mark ambiguous items with `[NEEDS CLARIFICATION: question]`
 
 ## Description Template
 
@@ -39,10 +56,13 @@ As a {user type}, I want to {action} so that {benefit}.
 - **Reuse:** {existing implementations to reference}
 - **Security:** {constraints, compliance requirements}
 
-## Acceptance Criteria
-- [ ] {criterion 1}
-- [ ] {criterion 2}
-- [ ] {criterion 3}
+## Acceptance Criteria (EARS)
+- [ ] WHEN {event} THE SYSTEM SHALL {response}
+- [ ] THE SYSTEM SHALL {capability}
+- [ ] IF {condition} THE SYSTEM SHALL {action}
+
+## Open Questions
+- [NEEDS CLARIFICATION: {ambiguous aspect}]
 
 ## Additional Context
 {technical notes, related features}

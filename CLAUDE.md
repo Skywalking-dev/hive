@@ -22,12 +22,14 @@ Hive es el repositorio central de AI tooling para Skywalking. Provee commands, s
 ```
 hive/
 ├── .claude/
-│   ├── commands/     ← flujos guiados (slash commands)
-│   └── skills/       ← conocimiento contextual
+│   ├── skills/       ← skills = knowledge + slash commands (single source)
+│   └── agents/       ← specialist agent definitions
 ├── scripts/          ← conectores Python (API/CLI)
 ├── .mcp.json         ← MCP servers config (gws, n8n, etc.)
 └── release.py        ← propagación multi-provider
 ```
+
+> **No commands directory.** Skills replaced commands entirely — one concept, one place.
 
 ## Providers
 
