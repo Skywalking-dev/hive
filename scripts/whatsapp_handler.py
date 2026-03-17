@@ -15,7 +15,7 @@ from urllib.error import HTTPError
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv()
 
 GRAPH_API_VERSION = "v18.0"
 GRAPH_API_BASE = f"https://graph.facebook.com/{GRAPH_API_VERSION}"

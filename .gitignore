@@ -41,6 +41,29 @@ Thumbs.db
 .agent/
 .codex/
 
+# === PERSONAL / PRIVATE ===
+# Crypto exchange integrations (not open source)
+scripts/binance_handler.py
+scripts/gate_handler.py
+skills/binance/
+skills/gate/
+skills/financial-advisor/
+
+# === THIRD-PARTY SKILLS ===
+# Installed via: python install_skills.py --all
+# Anthropic (proprietary)
+skills/pdf-anthropic/
+skills/skill-creator/
+skills/frontend-design/
+# n8n-skills (MIT, czlonkowski/n8n-skills)
+skills/n8n-workflow-patterns/
+skills/n8n-code-javascript/
+skills/n8n-code-python/
+skills/n8n-expression-syntax/
+skills/n8n-node-configuration/
+skills/n8n-validation-expert/
+skills/n8n-mcp-tools-expert/
+
 # === MISC ===
 *.log
 *.tmp

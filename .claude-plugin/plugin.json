@@ -1,0 +1,15 @@
+{
+  "name": "hive",
+  "version": "0.1.0",
+  "description": "AI skills, specialist agents, and API handlers for development workflows",
+  "author": {
+    "name": "Skywalking",
+    "url": "https://skywalking.dev"
+  },
+  "repository": "https://github.com/gparrar0x/hive",
+  "homepage": "https://skywalking.dev",
+  "license": "MIT",
+  "keywords": ["ai-tooling", "skills", "agents", "automation", "google", "slack", "whatsapp", "n8n", "supabase", "vercel"],
+  "skills": "./skills/",
+  "agents": "./agents/"
+}

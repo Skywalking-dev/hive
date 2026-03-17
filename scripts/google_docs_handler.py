@@ -32,7 +32,7 @@ from urllib.error import HTTPError
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv()
 from urllib.parse import urlencode, quote
 
 TOKEN_URL = "https://oauth2.googleapis.com/token"

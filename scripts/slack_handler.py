@@ -17,7 +17,7 @@ from urllib.parse import urlencode
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv()
 
 SLACK_API_BASE = "https://slack.com/api"
 

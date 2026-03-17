@@ -42,7 +42,7 @@ def main():
         sys.exit(1)
 
     # Paths
-    # Assuming script is in .claude/scripts/, so root is ../../
+    # Assuming script is in scripts/, so root is ../../
     # However, the bash script used absolute path /Users/gpublica/workspace/skywalking
     # or relative to execution. The bash script defined WORKSPACE_ROOT hardcoded.
     # We will try to find the workspace root relative to this script or current dir.

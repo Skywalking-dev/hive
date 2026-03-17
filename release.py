@@ -17,9 +17,8 @@ SCRIPT_DIR = Path(__file__).parent.resolve()
 WORKSPACE_ROOT = SCRIPT_DIR.parent  # skywalking/
 HIVE_DIR = SCRIPT_DIR
 
-# Source of truth
-CLAUDE_DIR = HIVE_DIR / ".claude"
-SKILLS_DIR = CLAUDE_DIR / "skills"
+# Source of truth (plugin format: skills/ at root)
+SKILLS_DIR = HIVE_DIR / "skills"
 
 # Target directories
 # NOTE: commands removed — skills cover all use cases

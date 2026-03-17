@@ -1,11 +1,11 @@
 # Hive
 
 > AI Tooling Omnimodal - Skywalking
-> Source of truth: `.claude/`
+> Claude Code Plugin
 
 ## Overview
 
-Hive es el repositorio central de AI tooling para Skywalking. Provee commands, skills y scripts para interactuar con nuestro stack de forma unificada desde cualquier AI provider.
+Hive es el repositorio central de AI tooling para Skywalking. Provee skills, agents y scripts para interactuar con nuestro stack de forma unificada desde cualquier AI provider.
 
 ## Stack
 
@@ -21,37 +21,40 @@ Hive es el repositorio central de AI tooling para Skywalking. Provee commands, s
 
 ```
 hive/
-├── .claude/
-│   ├── skills/       ← skills = knowledge + slash commands (single source)
-│   └── agents/       ← specialist agent definitions
-├── scripts/          ← conectores Python (API/CLI)
-├── .mcp.json         ← MCP servers config (gws, n8n, etc.)
-└── release.py        ← propagación multi-provider
+├── .claude-plugin/
+│   └── plugin.json   ← plugin manifest
+├── skills/            ← slash commands + knowledge (source of truth)
+├── agents/            ← specialist agent definitions
+├── scripts/           ← Python API handlers
+├── docs/              ← security model, env reference
+├── .mcp.json          ← MCP servers config (gws, n8n, etc.)
+└── release.py         ← sync to Cursor, Gemini CLI, Codex
 ```
-
-> **No commands directory.** Skills replaced commands entirely — one concept, one place.
 
 ## Providers
 
-| Provider | Config Dir | Synced From |
-|----------|------------|-------------|
-| Claude Code | `.claude/` | source |
-| Cursor | `.cursor/` | symlink |
+| Provider | Config Dir | Method |
+|----------|------------|--------|
+| Claude Code | `.claude-plugin/` | plugin format |
+| Cursor | `.cursor/` | symlink + .mdc |
 | Gemini CLI | `.agent/` | symlink |
 | Codex | `.codex/` | symlink |
 
 ## Usage
 
 ```bash
+# Install third-party skills
+python install_skills.py --all
+
 # Sync to all providers
 python release.py
 
-# Run a command
-/slack <thread_url>
-/supabase <query>
-/vercel logs <deployment>
-/whatsapp send <number> <message>
-/gws sheets spreadsheets.values get --params '{"spreadsheetId": "ID", "range": "A1:D10"}'
+# Use slash commands
+/gmail inbox --unread
+/slack read <thread_url>
+/perplexity "query"
+/shape
+/ship_it
 ```
 
 ## Development

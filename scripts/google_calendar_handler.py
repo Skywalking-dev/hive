@@ -17,7 +17,7 @@ from urllib.parse import urlencode, quote
 
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+load_dotenv()
 
 CALENDAR_API_BASE = "https://www.googleapis.com/calendar/v3"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
