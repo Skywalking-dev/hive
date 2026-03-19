@@ -1,18 +1,27 @@
 ---
 name: ship_it
-description: Full shipping pipeline — review PR, fix all issues, merge, deploy, and verify in production. Use when user says "ship it" and means "get this to production verified". Runs /pr-review, resolves all comments, merges, and confirms the deploy works.
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(vercel:*), Bash(curl:*), Skill(pr-review), Skill(vercel), Agent
+description: Full shipping pipeline — commit, push, PR, review, fix, merge, deploy, verify. Use when user says "ship it" and wants code to reach production verified. Handles everything from uncommitted changes to live deployment.
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(vercel:*), Bash(curl:*), Skill(pr-review), Skill(push_it), Skill(vercel), Agent
 ---
 
 # Ship It
 
-Review → Fix → Merge → Deploy → Verify. Not done until it's live and working.
+Commit → Push → PR → Review → Fix → Merge → Deploy → Verify. Not done until it's live and working.
 
 ## Pipeline
 
+### Phase 0 — Push (if needed)
+
+If there are uncommitted changes or no open PR:
+
+1. Run `/push_it` — stages, commits, pushes, opens PR
+2. Continue to Phase 1 with the new PR
+
+If a PR already exists and is up to date, skip to Phase 1.
+
 ### Phase 1 — Self-Review
 
-1. Run `/pr-review` on the current PR (or create one via `/push_it` if none exists)
+1. Run `/pr-review` on the current PR
 2. Read all findings and PR comments
 
 ### Phase 2 — Fix Loop
