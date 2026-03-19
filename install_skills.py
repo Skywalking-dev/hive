@@ -11,7 +11,7 @@ import tempfile
 import subprocess
 from pathlib import Path
 
-SKILLS_DIR = Path(__file__).parent / ".claude" / "skills"
+SKILLS_DIR = Path(__file__).parent / "skills"
 
 # Third-party skill registry
 # Each entry: source repo, subdirectory in repo, skills to install

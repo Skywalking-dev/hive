@@ -6,7 +6,7 @@
     "name": "Skywalking",
     "url": "https://skywalking.dev"
   },
-  "repository": "https://github.com/gparrar0x/hive",
+  "repository": "https://github.com/Skywalking-dev/hive",
   "homepage": "https://skywalking.dev",
   "license": "MIT",
   "keywords": ["ai-tooling", "skills", "agents", "automation", "google", "slack", "whatsapp", "n8n", "supabase", "vercel"],

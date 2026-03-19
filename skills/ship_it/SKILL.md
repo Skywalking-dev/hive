@@ -8,20 +8,16 @@ allowed-tools: Bash(git:*), Bash(gh:*)
 
 Commit all changes, push, and open a PR — one command.
 
-## Context
-
-- Current git status: !`git status`
-- Current git diff: !`git diff HEAD`
-- Current branch: !`git branch --show-current`
-- Recent commits: !`git log --oneline -5`
-
 ## Steps
+
+0. **Context**: Run `git status`, `git diff HEAD`, `git branch --show-current`, and `git log --oneline -5` to understand what changed
 
 1. **Stage changes**: Add relevant files (avoid secrets, `.env`, large binaries)
 2. **Branch**: If on `main`, create a feature branch first
-3. **Commit**: Write a concise commit message based on the diff
-4. **Push**: Push to origin with `-u` flag
-5. **PR**: Create PR via `gh pr create`
+3. **CHANGELOG**: If `CHANGELOG.md` exists, add entry under `[Unreleased]` (Common Changelog + SemVer)
+4. **Commit**: Write a concise commit message based on the diff
+5. **Push**: Push to origin with `-u` flag
+6. **PR**: Create PR via `gh pr create`
 
 ## Commit Message Format
 

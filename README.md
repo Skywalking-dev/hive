@@ -20,23 +20,31 @@ Need something bigger? Delegate to specialist agents that handle design, fronten
 ## Quick Start
 
 ```bash
-git clone https://github.com/gparrar0x/hive.git
+# Clone into your workspace
+cd ~/workspace
+git clone https://github.com/Skywalking-dev/hive.git
 cd hive
 uv sync                          # install Python deps
 cp .env.example .env             # add only the keys you need
 python install_skills.py --all   # install third-party skills (n8n, Anthropic)
+
+# Install into workspace (creates symlinks one level up)
+python release.py
 ```
 
-**As a Claude Code plugin:**
+This creates symlinks in your workspace root so Claude Code, Cursor, and other providers can find hive's skills and agents:
 
-```bash
-claude --plugin-dir /path/to/hive
 ```
-
-**For other providers:**
-
-```bash
-python release.py    # sync skills to Cursor, Gemini CLI, Codex
+~/workspace/                     ← open Claude Code here
+├── .claude/
+│   ├── skills/ → hive/skills/   ← symlink
+│   └── agents/ → hive/agents/   ← symlink
+├── .cursor/rules/               ← generated .mdc files
+├── hive/                        ← this repo (source of truth)
+│   ├── skills/
+│   ├── agents/
+│   └── scripts/
+└── your-projects/
 ```
 
 > All integrations are optional. Hive works with zero API keys — just add them as you need each integration.

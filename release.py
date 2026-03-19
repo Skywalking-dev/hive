@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 """
 Hive Release Script
-Propagates .claude/ (source of truth) to all AI providers.
+Installs hive skills, agents, and configs into the parent workspace.
 
-Equivalent to Formica's release_ants.sh but in Python.
+Creates symlinks so that opening Claude Code (or Cursor, Gemini CLI, Codex)
+from the workspace root gives access to all hive skills and agents.
+
+Structure after release:
+  skywalking/                    ← workspace root
+  ├── .claude/
+  │   ├── skills/ → hive/skills/
+  │   └── agents/ → hive/agents/
+  ├── .cursor/rules/             ← generated .mdc files
+  ├── .mcp.json                  ← merged MCP configs
+  └── hive/                      ← this repo (source of truth)
 """
 
 import sys
@@ -13,24 +23,10 @@ from pathlib import Path
 from datetime import datetime
 
 # Directories
-SCRIPT_DIR = Path(__file__).parent.resolve()
-WORKSPACE_ROOT = SCRIPT_DIR.parent  # skywalking/
-HIVE_DIR = SCRIPT_DIR
-
-# Source of truth (plugin format: skills/ at root)
+HIVE_DIR = Path(__file__).parent.resolve()
+WORKSPACE_ROOT = HIVE_DIR.parent
 SKILLS_DIR = HIVE_DIR / "skills"
-
-# Target directories
-# NOTE: commands removed — skills cover all use cases
-TARGETS = {
-    "workspace": {
-        ".claude/skills": SKILLS_DIR,
-        ".cursor/rules": None,  # Generated from skills
-    },
-    "hive": {
-        ".cursor/rules": None,
-    },
-}
+AGENTS_DIR = HIVE_DIR / "agents"
 
 
 def info(msg: str):
@@ -71,31 +67,32 @@ def build_cursor_rules(skills_dir: Path, rules_dir: Path):
     """Generate .mdc files from skills for Cursor."""
     rules_dir.mkdir(parents=True, exist_ok=True)
 
-    # Clean existing .mdc files
     for mdc in rules_dir.glob("*.mdc"):
         mdc.unlink()
 
+    count = 0
     for skill_path in skills_dir.iterdir():
         if not skill_path.is_dir():
             continue
 
         skill_md = skill_path / "SKILL.md"
         if not skill_md.exists():
-            warn(f"Missing SKILL.md for {skill_path.name}")
+            skill_md = skill_path / "skill.md"
+        if not skill_md.exists():
             continue
 
         out_file = rules_dir / f"{skill_path.name}.mdc"
         shutil.copy(skill_md, out_file)
-        info(f"Skill {skill_path.name}: SKILL.md -> {out_file.name}")
+        count += 1
+
+    info(f"Cursor rules: {count} skills → .mdc files")
 
 
 def merge_mcp_configs(source: Path, target: Path):
     """Merge MCP servers from source into target."""
     if not source.exists():
-        warn(f"Source MCP config not found: {source}")
         return
 
-    # Load or create target config
     if target.exists():
         with open(target) as f:
             target_cfg = json.load(f)
@@ -109,90 +106,67 @@ def merge_mcp_configs(source: Path, target: Path):
     target_servers = target_cfg.setdefault("mcpServers", {})
 
     added = []
-    skipped = []
-
     for name, server in source_servers.items():
-        if name in target_servers:
-            skipped.append(name)
-        else:
+        if name not in target_servers:
             target_servers[name] = server
             added.append(name)
 
-    with open(target, "w") as f:
-        json.dump(target_cfg, f, indent=2)
-        f.write("\n")
-
-    info(f"MCP servers added: {', '.join(added) or 'none'}")
-    if skipped:
-        info(f"MCP servers skipped (existing): {', '.join(skipped)}")
-
-
-def confirm(skip: bool = False) -> bool:
-    """Ask for user confirmation."""
-    info("Planned actions:")
-    print("  - Symlink skills to Claude (workspace)")
-    print("  - Generate .mdc rules for Cursor from skills")
-    print()
-
-    if skip:
-        info("Skipping confirmation (--yes)")
-        return True
-
-    if not sys.stdin.isatty():
-        warn("No TTY available; use --yes to skip confirmation")
-        return False
-
-    reply = input("[hive] Proceed? [y/N]: ").strip().lower()
-    return reply in ("y", "yes")
+    if added:
+        with open(target, "w") as f:
+            json.dump(target_cfg, f, indent=2)
+            f.write("\n")
+        info(f"MCP servers added: {', '.join(added)}")
+    else:
+        info("MCP servers: all already present")
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Hive release script")
+    parser = argparse.ArgumentParser(
+        description="Install hive skills and agents into workspace"
+    )
     parser.add_argument("-y", "--yes", action="store_true", help="Skip confirmation")
     args = parser.parse_args()
 
-    info(f"Workspace root: {WORKSPACE_ROOT}")
-    info(f"Hive directory: {HIVE_DIR}")
+    info(f"Hive: {HIVE_DIR}")
+    info(f"Workspace: {WORKSPACE_ROOT}")
 
-    if not confirm(skip=args.yes):
-        info("Cancelled")
-        return 1
-
-    # Ensure source exists
     if not SKILLS_DIR.exists():
-        warn(f"Skills directory not found: {SKILLS_DIR}")
+        warn(f"Skills not found: {SKILLS_DIR}")
         return 1
 
-    # Create workspace symlinks
-    for rel_path, target in TARGETS["workspace"].items():
-        if target is None:
-            continue
-        link_path = WORKSPACE_ROOT / rel_path
-        create_symlink(target, link_path, f"Workspace {rel_path}")
+    # Show plan
+    info("Actions:")
+    print(f"  Symlink {WORKSPACE_ROOT}/.claude/skills → {SKILLS_DIR}")
+    print(f"  Symlink {WORKSPACE_ROOT}/.claude/agents → {AGENTS_DIR}")
+    print(f"  Generate .cursor/rules/ from skills")
+    print(f"  Merge .mcp.json configs")
+    print()
 
-    # Create hive symlinks
-    for rel_path, target in TARGETS["hive"].items():
-        if target is None:
-            continue
-        link_path = HIVE_DIR / rel_path
-        create_symlink(target, link_path, f"Hive {rel_path}")
+    if not args.yes:
+        if not sys.stdin.isatty():
+            warn("No TTY; use --yes to skip confirmation")
+            return 1
+        reply = input("[hive] Proceed? [y/N]: ").strip().lower()
+        if reply not in ("y", "yes"):
+            info("Cancelled")
+            return 1
 
-    # Build Cursor rules from skills
-    hive_rules = HIVE_DIR / ".cursor" / "rules"
-    build_cursor_rules(SKILLS_DIR, hive_rules)
+    # 1. Claude Code — symlink skills + agents to workspace
+    create_symlink(SKILLS_DIR, WORKSPACE_ROOT / ".claude" / "skills", "Claude skills")
+    create_symlink(AGENTS_DIR, WORKSPACE_ROOT / ".claude" / "agents", "Claude agents")
 
-    # Link workspace rules to hive rules
-    workspace_rules = WORKSPACE_ROOT / ".cursor" / "rules"
-    create_symlink(hive_rules, workspace_rules, "Workspace .cursor/rules")
+    # 2. Cursor — generate .mdc rules
+    cursor_rules = WORKSPACE_ROOT / ".cursor" / "rules"
+    build_cursor_rules(SKILLS_DIR, cursor_rules)
 
-    # Merge MCP configs if hive has one
+    # 3. MCP configs — merge hive's into workspace
     hive_mcp = HIVE_DIR / ".mcp.json"
     workspace_mcp = WORKSPACE_ROOT / ".mcp.json"
     if hive_mcp.exists():
         merge_mcp_configs(hive_mcp, workspace_mcp)
 
-    info("Release complete")
+    info("Done. Open Claude Code from workspace root to use hive skills.")
     return 0
 
 
