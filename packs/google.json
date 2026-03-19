@@ -1,0 +1,9 @@
+{
+  "name": "google",
+  "description": "Google APIs: Gmail, Docs, Drive, Calendar, YouTube, Workspace",
+  "source": "local",
+  "skills": [
+    "gmail", "google-docs", "google-drive", "google-calendar",
+    "google-workspace", "extract_transcript"
+  ]
+}

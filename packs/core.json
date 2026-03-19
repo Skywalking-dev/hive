@@ -1,0 +1,9 @@
+{
+  "name": "core",
+  "description": "Essential workflow skills — always installed",
+  "source": "builtin",
+  "skills": [
+    "shape", "capture", "refine", "dev", "push_it", "ship_it",
+    "reunion", "delegation_rules", "pr-review", "backlog_manager"
+  ]
+}

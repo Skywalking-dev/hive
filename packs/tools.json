@@ -1,0 +1,6 @@
+{
+  "name": "tools",
+  "description": "Utilities: Perplexity search, adversarial review, budgets, reports, travel",
+  "source": "local",
+  "skills": ["perplexity", "adversarial_review", "crear_presupuesto", "report-viewer", "travel-assistant"]
+}

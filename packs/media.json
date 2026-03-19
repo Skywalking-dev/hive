@@ -1,0 +1,6 @@
+{
+  "name": "media",
+  "description": "Audio processing and video transcript analysis",
+  "source": "local",
+  "skills": ["process_audio", "video-analysis"]
+}

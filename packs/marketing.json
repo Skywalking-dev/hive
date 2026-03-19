@@ -1,0 +1,9 @@
+{
+  "name": "marketing",
+  "description": "B2B marketing: copywriting, cold email, CRO, pricing, content, social",
+  "source": "local",
+  "skills": [
+    "copywriting", "cold-email", "content-strategy", "social-content",
+    "page-cro", "competitor-alternatives", "pricing-strategy", "email-sequence"
+  ]
+}

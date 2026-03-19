@@ -1,0 +1,13 @@
+{
+  "name": "n8n",
+  "description": "n8n automation skills by Romuald Członkowski",
+  "source": "github",
+  "repo": "https://github.com/czlonkowski/n8n-skills.git",
+  "path": "skills",
+  "license": "MIT",
+  "skills": [
+    "n8n-workflow-patterns", "n8n-code-javascript", "n8n-code-python",
+    "n8n-expression-syntax", "n8n-node-configuration",
+    "n8n-validation-expert", "n8n-mcp-tools-expert"
+  ]
+}

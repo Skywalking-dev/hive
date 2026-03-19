@@ -1,0 +1,6 @@
+{
+  "name": "devops",
+  "description": "Infrastructure: Vercel, Supabase, GitHub CLI, test debugging",
+  "source": "local",
+  "skills": ["vercel", "supabase", "github-cli", "test-debug"]
+}

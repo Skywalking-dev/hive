@@ -45,17 +45,48 @@ Thumbs.db
 # Crypto exchange integrations (not open source)
 scripts/binance_handler.py
 scripts/gate_handler.py
+scripts/flight_tracker.py
 skills/binance/
 skills/gate/
 skills/financial-advisor/
+data/
 
-# === THIRD-PARTY SKILLS ===
-# Installed via: python install_skills.py --all
-# Anthropic (proprietary)
+# === INSTALLED PACKS ===
+# Skills installed from packs (available/ → skills/) via install_skills.py
+# These are copies, not source — the source lives in available/ or remote repos
+skills/gmail/
+skills/google-docs/
+skills/google-drive/
+skills/google-calendar/
+skills/google-workspace/
+skills/extract_transcript/
+skills/copywriting/
+skills/cold-email/
+skills/content-strategy/
+skills/social-content/
+skills/page-cro/
+skills/competitor-alternatives/
+skills/pricing-strategy/
+skills/email-sequence/
+skills/vercel/
+skills/supabase/
+skills/github-cli/
+skills/test-debug/
+skills/slack-api/
+skills/whatsapp/
+skills/process_audio/
+skills/video-analysis/
+skills/perplexity/
+skills/adversarial_review/
+skills/crear_presupuesto/
+skills/report-viewer/
+skills/travel-assistant/
+
+# === THIRD-PARTY (remote packs) ===
+# Installed from GitHub repos via install_skills.py
 skills/pdf-anthropic/
 skills/skill-creator/
 skills/frontend-design/
-# n8n-skills (MIT, czlonkowski/n8n-skills)
 skills/n8n-workflow-patterns/
 skills/n8n-code-javascript/
 skills/n8n-code-python/
@@ -63,6 +94,7 @@ skills/n8n-expression-syntax/
 skills/n8n-node-configuration/
 skills/n8n-validation-expert/
 skills/n8n-mcp-tools-expert/
+skills/n8n-automations/
 
 # === MISC ===
 *.log

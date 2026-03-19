@@ -1,0 +1,6 @@
+{
+  "name": "communication",
+  "description": "Messaging: Slack threads, WhatsApp Business",
+  "source": "local",
+  "skills": ["slack-api", "whatsapp"]
+}

@@ -44,10 +44,10 @@ hive/
 
 ```bash
 # Install third-party skills
-python install_skills.py --all
+uv run hive install --all
 
 # Sync to all providers
-python release.py
+uv run hive setup
 
 # Use slash commands
 /gmail inbox --unread

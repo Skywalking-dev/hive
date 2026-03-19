@@ -26,10 +26,10 @@ git clone https://github.com/Skywalking-dev/hive.git
 cd hive
 uv sync                          # install Python deps
 cp .env.example .env             # add only the keys you need
-python install_skills.py --all   # install third-party skills (n8n, Anthropic)
+uv run hive install --all   # install third-party skills (n8n, Anthropic)
 
 # Install into workspace (creates symlinks one level up)
-python release.py
+uv run hive setup
 ```
 
 This creates symlinks in your workspace root so Claude Code, Cursor, and other providers can find hive's skills and agents:
@@ -54,14 +54,18 @@ This creates symlinks in your workspace root so Claude Code, Cursor, and other p
 ```
 hive/
 ├── .claude-plugin/
-│   └── plugin.json   ← plugin manifest
-├── skills/            ← 40+ slash commands (source of truth)
-├── agents/            ← 9 specialist agent definitions
-├── scripts/           ← Python handlers for external APIs
-├── docs/              ← security model, env variable reference
-├── .mcp.json          ← MCP server configs
-├── install_skills.py  ← install third-party skills
-└── release.py         ← sync to Cursor, Gemini CLI, Codex
+│   └── plugin.json    ← plugin manifest
+├── skills/             ← active skills (core + installed packs)
+├── available/          ← pack skills (not active until installed)
+│   ├── google/
+│   ├── marketing/
+│   ├── devops/
+│   └── ...
+├── packs/              ← pack definitions (JSON)
+├── agents/             ← 9 specialist agent definitions
+├── scripts/            ← Python handlers for external APIs
+├── docs/               ← security model, env variable reference
+└── hive.py             ← CLI: install packs, setup workspace
 ```
 
 **Skills** are Markdown files that teach your AI assistant how to use a tool. Each skill maps to a `/slash-command` and declares which tools the AI can use. The AI reads the skill, understands the API, and executes it.
@@ -157,7 +161,7 @@ Write skills once, use them everywhere:
 | Codex | `.codex/` — symlink |
 
 ```bash
-python release.py       # sync to Cursor, Gemini CLI, Codex
+uv run hive setup       # sync to Cursor, Gemini CLI, Codex
 ```
 
 ## Security
@@ -198,22 +202,28 @@ Use `/skill-creator` for guided creation, or add the file manually.
 - [uv](https://docs.astral.sh/uv/) for dependency management
 - API keys for the integrations you want (all optional)
 
-## Third-Party Skills
+## Skill Packs
 
-Some skills come from external repos and are not bundled in Hive. Install them with:
+Hive ships with core workflow skills. Everything else installs via packs:
 
 ```bash
-python install_skills.py --list              # see what's available
-python install_skills.py n8n-skills          # install n8n collection
-python install_skills.py anthropic-skills    # install Anthropic skills
-python install_skills.py --all               # install everything
-python install_skills.py --all --force       # reinstall / update all
+uv run hive install --list              # see all packs
+uv run hive install google devops       # install specific packs
+uv run hive install --all               # install everything
+uv run hive install remove marketing  # uninstall a pack
 ```
 
-| Collection | Skills | Author | License |
-|-----------|--------|--------|---------|
-| `n8n-skills` | 7 n8n automation skills | [Romuald Członkowski](https://github.com/czlonkowski/n8n-skills) | MIT |
-| `anthropic-skills` | pdf-anthropic, skill-creator, frontend-design | [Anthropic](https://github.com/anthropics/claude-code-skills) | Proprietary |
+| Pack | Skills | What's in it |
+|------|--------|-------------|
+| **core** | 10 | shape, capture, refine, dev, push_it, ship_it, reunion (always installed) |
+| **google** | 6 | Gmail, Docs, Drive, Calendar, Workspace, YouTube |
+| **marketing** | 8 | Copywriting, cold email, CRO, pricing, content, social |
+| **devops** | 4 | Vercel, Supabase, GitHub CLI, test debugging |
+| **communication** | 2 | Slack, WhatsApp |
+| **media** | 2 | Audio processing, video analysis |
+| **tools** | 5 | Perplexity, adversarial review, budgets, reports, travel |
+| **n8n** | 7 | n8n automation ([czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills), MIT) |
+| **anthropic** | 3 | PDF tools, skill creator, frontend design ([Anthropic](https://github.com/anthropics/claude-code-skills), Proprietary) |
 
 ## Contributing
 
