@@ -1,52 +1,76 @@
 ---
 name: ship_it
-description: Commit, push, and open a PR in one step. Use when user says "ship it", wants to commit + push + PR, or is done with a feature and ready to merge.
-allowed-tools: Bash(git:*), Bash(gh:*)
+description: Full shipping pipeline — review PR, fix all issues, merge, deploy, and verify in production. Use when user says "ship it" and means "get this to production verified". Runs /pr-review, resolves all comments, merges, and confirms the deploy works.
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(vercel:*), Bash(curl:*), Skill(pr-review), Skill(vercel), Agent
 ---
 
 # Ship It
 
-Commit all changes, push, and open a PR — one command.
+Review → Fix → Merge → Deploy → Verify. Not done until it's live and working.
 
-## Steps
+## Pipeline
 
-0. **Context**: Run `git status`, `git diff HEAD`, `git branch --show-current`, and `git log --oneline -5` to understand what changed
+### Phase 1 — Self-Review
 
-1. **Stage changes**: Add relevant files (avoid secrets, `.env`, large binaries)
-2. **Branch**: If on `main`, create a feature branch first
-3. **CHANGELOG**: If `CHANGELOG.md` exists, add entry under `[Unreleased]` (Common Changelog + SemVer)
-4. **Commit**: Write a concise commit message based on the diff
-5. **Push**: Push to origin with `-u` flag
-6. **PR**: Create PR via `gh pr create`
+1. Run `/pr-review` on the current PR (or create one via `/push_it` if none exists)
+2. Read all findings and PR comments
 
-## Commit Message Format
+### Phase 2 — Fix Loop
+
+While there are CRITICAL or HIGH findings:
+
+1. Fix each finding in the codebase
+2. Commit fixes: `fix: resolve PR review findings`
+3. Push
+4. Re-run `/pr-review`
+5. Repeat until APPROVE
+
+**Max iterations:** 3. If still blocked after 3 rounds, stop and ask user.
+
+### Phase 3 — Merge
+
+1. Verify CI checks pass: `gh pr checks {PR_NUMBER}`
+2. Wait for checks if pending (poll every 30s, max 5min)
+3. Merge: `gh pr merge {PR_NUMBER} --squash --delete-branch`
+
+### Phase 4 — Verify Deploy
+
+1. Detect platform from project (check `vercel.json`, `.vercel/`, etc.)
+2. **Vercel projects:**
+   - `vercel ls --json` → find latest deployment
+   - Wait for deployment to be READY (poll `vercel inspect`, max 3min)
+   - `curl -sI {PRODUCTION_URL}` → verify HTTP 200
+   - If the project has a known health endpoint or page, fetch it
+3. **Non-Vercel:** Check if there's a deploy script or CI/CD, report status
+4. **If browser tools available:** Navigate to production URL, take screenshot, verify key elements render
+
+### Phase 5 — Report
 
 ```
-<type>: <what changed>
+🚀 Shipped: PR #{NUMBER} → {BRANCH} merged to {BASE}
 
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
+Review: {N} rounds, {TOTAL_FIXES} fixes applied
+CI: ✓ all checks passed
+Deploy: ✓ {PLATFORM} deployment {ID} READY
+Verify: ✓ {PRODUCTION_URL} responding 200
 
-Types: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`
-
-## PR Format
-
-```bash
-gh pr create --title "<short title>" --body "$(cat <<'EOF'
-## Summary
-- <bullet points>
-
-## Test plan
-- [ ] <how to verify>
-EOF
-)"
+Linear: {ISSUE_ID} → Testing
 ```
 
 ## Rules
 
-- NEVER commit `.env`, credentials, or secrets
-- NEVER force push to `main`
-- ALWAYS create a new branch if on `main`
-- Keep commit messages short and focused on "why"
-- One commit per ship (squash if multiple changes)
-- Execute ALL steps in a single response — do not pause between them
+- NEVER merge with failing CI
+- NEVER skip the review phase — always self-review first
+- If review finds CRITICAL security issues, STOP and alert user before fixing
+- If deploy fails, DO NOT retry blindly — report the error
+- If production verification fails (non-200, key elements missing), alert user immediately
+- Always squash merge to keep history clean
+- Delete branch after merge
+
+## Relation to Other Skills
+
+```
+/push_it  → commit + push + open PR (code done, ready for review)
+/ship_it  → review + fix + merge + deploy + verify (ready for production)
+/pr-review → just the review step (standalone)
+```
