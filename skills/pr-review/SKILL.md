@@ -315,9 +315,9 @@ Recommendation: Consider splitting this PR.
 ## Integration with Pipeline
 
 ```
-/shape → /refine → /dev → /ship_it → /review → merge → deploy
-                                         ↑
-                                    YOU ARE HERE
+/shape → /refine → /dev → /push_it → /ship_it (calls /pr-review → fix → merge → verify)
+                                                            ↑
+                                                  /pr-review runs here (also standalone)
 ```
 
 After `/review`:
