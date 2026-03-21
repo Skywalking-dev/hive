@@ -1,6 +1,6 @@
 # Hive
 
-Give your AI coding assistant superpowers. 40+ skills, 9 specialist agents, one repo — works with Claude Code, Cursor, Gemini CLI, and Codex.
+Give your AI coding assistant superpowers. 40+ skills, 10 agents (1 orchestrator + 9 specialists), one repo — works with Claude Code, Cursor, Gemini CLI, and Codex.
 
 ## What is Hive?
 
@@ -62,7 +62,7 @@ hive/
 │   ├── devops/
 │   └── ...
 ├── packs/              ← pack definitions (JSON)
-├── agents/             ← 9 specialist agent definitions
+├── agents/             ← 10 agent definitions (1 orchestrator + 9 specialists)
 ├── scripts/            ← Python handlers for external APIs
 ├── docs/               ← security model, env variable reference
 └── hive.py             ← CLI: install packs, setup workspace
@@ -135,14 +135,25 @@ hive/
 
 ## Agents
 
-Specialist agents you can delegate tasks to. Each one has deep domain knowledge and works autonomously.
+### Mentat — AI General Advisor
+
+The orchestrator. Mentat coordinates the entire agent ecosystem: breaks down complex work, delegates to specialists, synthesizes results, and ensures delivery. Think system architect + project manager + technical lead in one.
+
+- Strategic planning and architecture design
+- Multi-agent coordination and task routing
+- Business-technical bridge (ROI-driven decisions)
+- n8n workflow design and optimization
+
+### Specialists
+
+Domain experts that Mentat delegates to. Each one has deep knowledge and works autonomously.
 
 | Agent | What they do |
 |-------|-------------|
 | **Aurora** | Brand identity, design systems, UI mockups, test ID contracts |
 | **Pixel** | Next.js/React implementation, performance, accessibility |
 | **Kokoro** | FastAPI, databases, auth, backend architecture |
-| **Sentinela** | QA strategy, Playwright E2E, regression testing |
+| **Centinela** | QA strategy, Playwright E2E, regression testing |
 | **Hermes** | Vercel deployments, CI/CD, edge functions, monitoring |
 | **Flux** | n8n workflows, integrations, automation |
 | **Oraculo** | Web research, competitive intel, tech evaluation |

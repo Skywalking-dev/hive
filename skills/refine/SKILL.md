@@ -30,7 +30,7 @@ Technical breakdown of shaped issues → agent sub-issues.
 | Pixel | Frontend, React/Next.js | Components, pages, UI | `pixel-frontend-specialist` |
 | Flux | Automation, n8n | Workflows, integrations | `flux-automation-specialist` |
 | Hermes | Deploy, Vercel, monitoring | CI/CD, performance | `hermes-deployment-specialist` |
-| Sentinela | QA, E2E, Playwright | Test coverage | `sentinela-test-automation-expert` |
+| Centinela | QA, E2E, Playwright | Test coverage | `centinela-test-automation-expert` |
 | Lumen | SEO, schema | Search optimization | `lumen` |
 
 ## Flow
@@ -91,7 +91,7 @@ linear_createIssue:
 - Components to create/modify
 - Pages affected
 - Props/state requirements
-- data-testid for Sentinela
+- data-testid for Centinela
 
 ### Aurora (Design)
 - Design tokens needed
@@ -99,7 +99,7 @@ linear_createIssue:
 - Responsive breakpoints
 - Accessibility requirements
 
-### Sentinela (QA)
+### Centinela (QA)
 - Test scenarios
 - data-testid contract from Pixel
 - Edge cases to cover
@@ -120,7 +120,7 @@ linear_createIssue:
 Common patterns:
 - Kokoro before Pixel (API needed for frontend)
 - Aurora before Pixel (design specs needed)
-- Pixel before Sentinela (test IDs needed)
+- Pixel before Centinela (test IDs needed)
 - All before Hermes (deploy last)
 
 ## Next Step
@@ -145,7 +145,7 @@ Parent: [Feature] WhatsApp button configurable
 │   - components/storefront/WhatsAppButton.tsx
 │   - Integration in 4 templates
 │   - Dashboard settings UI
-└── [Sentinela] E2E tests
+└── [Centinela] E2E tests
     - Button visibility
     - Click behavior
     - Dashboard config flow

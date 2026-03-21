@@ -1,8 +1,54 @@
 {
   "mcpServers": {
-    "google-workspace": {
-      "command": "gws",
-      "args": ["mcp", "-s", "drive,gmail,calendar,docs,sheets,tasks,chat", "-e", "-w", "--tool-mode", "compact"]
+    "n8n-mcp": {
+      "command": "npx",
+      "args": [
+        "n8n-mcp"
+      ],
+      "env": {
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "error",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://publicala.app.n8n.cloud",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlY2IzN2ZlNi1jYzY5LTQ3ZmQtYjQ1OC1mYjhhNWE1NmNiMGYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzYwNzUzMTA1fQ.ni_KjhN8Iqaz4kM2QNZeETBeDKejasdclqSN4eWy1yw"
+      }
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "@playwright/mcp@latest"
+      ],
+      "env": {}
+    },
+    "linear": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@tacticlaunch/mcp-linear"
+      ],
+      "env": {
+        "LINEAR_API_TOKEN": "${LINEAR_API_TOKEN}"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ],
+      "env": {
+        "SUPABASE_ACCESS_TOKEN": "sbp_42e3cd12bdd7f7d6a5fb64823e10c48a08830dd9",
+        "SUPABASE_PROJECT_REF": "${SUPABASE_PROJECT_REF}"
+      }
+    },
+    "chrome-devtools": {
+      "description": "A Model Context Protocol server for interacting with Chrome DevTools, enabling browser automation, debugging, and performance analysis capabilities.",
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
     }
   }
 }

@@ -46,7 +46,7 @@ Parse `[Agent]` from sub-issue title:
 | `[Aurora] ...` | design | `aurora-product-designer` |
 | `[Flux] ...` | automation | `flux-automation-specialist` |
 | `[Hermes] ...` | deploy | `hermes-deployment-specialist` |
-| `[Sentinela] ...` | testing | `sentinela-test-automation-expert` |
+| `[Centinela] ...` | testing | `centinela-test-automation-expert` |
 | `[Lumen] ...` | seo | `lumen` |
 
 ## Dependency Order
@@ -58,13 +58,13 @@ Execute in dependency order:
 2. Kokoro     → Backend/API before frontend
 3. Pixel      → Frontend after API ready
 4. Flux       → Automation/integrations
-5. Sentinela  → E2E tests after frontend
+5. Centinela  → E2E tests after frontend
 6. Hermes     → Deploy last
 ```
 
 Detect blockers:
 - Pixel waits for Kokoro (API) and Aurora (design)
-- Sentinela waits for Pixel (test IDs)
+- Centinela waits for Pixel (test IDs)
 - Hermes waits for all implementation
 
 ## Delegation Protocol
@@ -167,12 +167,12 @@ Mentat:
 ├── Finds 3 sub-issues:
 │   ├── SKY-46: [Kokoro] Add migration
 │   ├── SKY-47: [Pixel] WhatsAppButton component
-│   └── SKY-48: [Sentinela] E2E tests
+│   └── SKY-48: [Centinela] E2E tests
 │
 ├── Checks dependencies:
 │   ├── Kokoro: no deps → ready
 │   ├── Pixel: needs Kokoro → blocked
-│   └── Sentinela: needs Pixel → blocked
+│   └── Centinela: needs Pixel → blocked
 │
 ├── Delegates SKY-46 to Kokoro agent
 │   ├── Agent implements migration + API
@@ -186,7 +186,7 @@ Mentat:
 │   ├── Agent completes
 │   └── Mentat: Comments on SKY-47, marks Done
 │
-├── Sentinela unblocked → Delegates SKY-48
+├── Centinela unblocked → Delegates SKY-48
 │   └── ... (similar flow)
 │
 └── All Done → Updates SKY-45 state
@@ -248,7 +248,7 @@ Starting work on SKY-45: [Feature] WhatsApp button
 Sub-issues found:
 ├── SKY-46: [Kokoro] Add migration → Ready
 ├── SKY-47: [Pixel] WhatsAppButton → Blocked (Kokoro)
-└── SKY-48: [Sentinela] E2E tests → Blocked (Pixel)
+└── SKY-48: [Centinela] E2E tests → Blocked (Pixel)
 
 Delegating SKY-46 to Kokoro...
 ```

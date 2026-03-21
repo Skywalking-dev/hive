@@ -156,7 +156,7 @@ Show the Decisiones finales table + Pendientes. Link to meeting file. Done.
 | Pixel | `pixel-frontend-specialist` | Next.js, React, UI implementation |
 | Flux | `flux-automation-specialist` | n8n workflows, integrations |
 | Hermes | `hermes-deployment-specialist` | Vercel, CI/CD, performance |
-| Sentinela | `sentinela-test-automation-expert` | Testing, QA, Playwright |
+| Centinela | `centinela-test-automation-expert` | Testing, QA, Playwright |
 | Lumen | `lumen-seo-specialist` | SEO, visibility, schema markup |
 | Pregon | `pregon-marketing-specialist` | Content, social, campaigns |
 | Oraculo | `oraculo-research-specialist` | Web research, competitive intel |

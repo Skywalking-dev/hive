@@ -74,7 +74,7 @@ The agent name in brackets is the **delegation signal** for Mentat (orchestrator
 | Pixel | Frontend, React | `[Pixel] WhatsAppButton component` |
 | Flux | Automation, n8n | `[Flux] Notification workflow` |
 | Hermes | Deploy, Vercel | `[Hermes] Configure env vars` |
-| Sentinela | QA, E2E | `[Sentinela] E2E tests for WhatsApp` |
+| Centinela | QA, E2E | `[Centinela] E2E tests for WhatsApp` |
 | Lumen | SEO | `[Lumen] Schema markup` |
 
 ## Decision Tree
