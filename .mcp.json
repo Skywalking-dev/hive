@@ -10,7 +10,7 @@
         "LOG_LEVEL": "error",
         "DISABLE_CONSOLE_OUTPUT": "true",
         "N8N_API_URL": "https://publicala.app.n8n.cloud",
-        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlY2IzN2ZlNi1jYzY5LTQ3ZmQtYjQ1OC1mYjhhNWE1NmNiMGYiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwiaWF0IjoxNzYwNzUzMTA1fQ.ni_KjhN8Iqaz4kM2QNZeETBeDKejasdclqSN4eWy1yw"
+        "N8N_API_KEY": "${N8N_API_KEY}"
       }
     },
     "playwright": {
@@ -38,7 +38,7 @@
         "@supabase/mcp-server-supabase@latest"
       ],
       "env": {
-        "SUPABASE_ACCESS_TOKEN": "sbp_42e3cd12bdd7f7d6a5fb64823e10c48a08830dd9",
+        "SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}",
         "SUPABASE_PROJECT_REF": "${SUPABASE_PROJECT_REF}"
       }
     },
