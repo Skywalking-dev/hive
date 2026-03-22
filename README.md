@@ -223,7 +223,7 @@ uv run hive install remove marketing  # uninstall a pack
 | **media** | 2 | Audio processing, video analysis |
 | **tools** | 5 | Perplexity, adversarial review, budgets, reports, travel |
 | **n8n** | 7 | n8n automation ([czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills), MIT) |
-| **anthropic** | 3 | PDF tools, skill creator, frontend design ([Anthropic](https://github.com/anthropics/claude-code-skills), Proprietary) |
+| **anthropic** | 3 | PDF tools, skill creator, frontend design ([Anthropic](https://github.com/anthropics/skills), Proprietary) |
 
 ## Contributing
 
