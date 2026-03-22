@@ -6,6 +6,10 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 
 ## [Unreleased]
 
+### Fixed
+- Anthropic pack: repo URL updated from `anthropics/claude-code-skills` to `anthropics/skills` (#5)
+- Anthropic pack: skill name `pdf-anthropic` → `pdf` to match new repo structure
+
 ## [0.2.0] - 2026-03-19
 
 ### Added

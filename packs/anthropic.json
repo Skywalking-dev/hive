@@ -2,8 +2,8 @@
   "name": "anthropic",
   "description": "Anthropic proprietary skills: PDF tools, skill creator, frontend design",
   "source": "github",
-  "repo": "https://github.com/anthropics/claude-code-skills.git",
+  "repo": "https://github.com/anthropics/skills.git",
   "path": "skills",
   "license": "Proprietary",
-  "skills": ["pdf-anthropic", "skill-creator", "frontend-design"]
+  "skills": ["pdf", "skill-creator", "frontend-design"]
 }

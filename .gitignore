@@ -84,7 +84,7 @@ skills/travel-assistant/
 
 # === THIRD-PARTY (remote packs) ===
 # Installed from GitHub repos via install_skills.py
-skills/pdf-anthropic/
+skills/pdf/
 skills/skill-creator/
 skills/frontend-design/
 skills/n8n-workflow-patterns/
