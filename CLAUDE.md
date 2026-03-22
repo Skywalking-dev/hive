@@ -16,6 +16,7 @@ Hive es el repositorio central de AI tooling para Skywalking. Provee skills, age
 | WhatsApp | Business messaging |
 | Slack | Team communication |
 | gws (Google Workspace CLI) | All Google APIs via CLI + MCP (Sheets, Tasks, Chat, etc.) |
+| Gemini API | Image generation (Imagen 4.0, Nano Banana), TTS |
 
 ## Architecture
 
@@ -50,12 +51,120 @@ uv run hive install --all
 uv run hive setup
 
 # Use slash commands
-/gmail inbox --unread
-/slack read <thread_url>
-/perplexity "query"
-/shape
-/ship_it
+/push_it                    # commit + push + PR
+/ship_it                    # review → fix → merge → deploy → verify
+/generate_image "prompt"    # create image via Gemini
+/process_video <url>        # extract + analyze video
 ```
+
+## Skills (Senses Framework)
+
+Skills are sensory extensions — each one gives Mentat a new capability.
+
+### Perceive
+| Skill | Sense | What |
+|-------|-------|------|
+| `process_audio` | Hear | Audio → text (Whisper) |
+| `process_video` | Watch | Video → transcript → analysis |
+| `perplexity` | Research | Real-time web knowledge |
+
+### Express
+| Skill | Sense | What |
+|-------|-------|------|
+| `generate_image` | Visual expression | Idea → image (Gemini Imagen 4.0 + Nano Banana) |
+| `generate_audio` | Speak | Text → voice (TODO: Gemini TTS) |
+
+### Interact
+| Skill | Sense | What |
+|-------|-------|------|
+| `claude-in-chrome` | Touch | Operate browser as human |
+
+### Shipping Pipeline
+| Skill | Purpose |
+|-------|---------|
+| `push_it` | Commit + push + open PR |
+| `ship_it` | Calls /pr-review → fix loop → merge → deploy → verify |
+| `pr-review` | PR review + Linear sync (standalone or via ship_it) |
+| `github-cli` | Git workflows, branch housekeeping |
+
+### Linear Operations
+| Skill | Purpose |
+|-------|---------|
+| `shape` | Guided discovery → Linear issue |
+| `capture` | Quick idea → Linear backlog |
+| `refine` | Technical breakdown → agent sub-issues |
+| `dev` | Orchestrate agent work on issue |
+| `backlog_manager` | Issue CRUD, queries, state changes |
+| `delegation_rules` | Route to specialist agents |
+
+### Development
+| Skill | Purpose |
+|-------|---------|
+| `frontend-design` | Distinctive UI, no generic AI look |
+| `pdf` | PDF extract, merge, fill forms |
+| `vercel` | Deploy, env, logs, cron |
+| `supabase` | DB queries, migrations, auth, logs |
+| `report-viewer` | HTML dashboards, auto-open in browser |
+| `test-debug` | E2E test execution + collaborative debugging |
+
+### Marketing & Content
+| Skill | Purpose |
+|-------|---------|
+| `copywriting` | Landing pages, hero sections, CTAs |
+| `social-content` | LinkedIn posts, X threads |
+| `content-strategy` | Content calendars, blog topics |
+| `cold-email` | B2B outreach sequences |
+| `email-sequence` | Nurture drips, onboarding flows |
+| `competitor-alternatives` | Battle cards, positioning |
+| `page-cro` | Conversion rate optimization |
+| `pricing-strategy` | Pricing tiers, LATAM adaptation |
+
+### Communication
+| Skill | Purpose |
+|-------|---------|
+| `gmail` | Read, draft, organize email |
+| `slack-api` | Read/post Slack threads |
+| `whatsapp` | Send WhatsApp Business messages |
+| `google-docs` | Read/create Google Docs |
+| `google-drive` | File management in Drive |
+| `google-calendar` | Events, availability |
+| `google-workspace` | All Google APIs fallback |
+
+### Finance
+| Skill | Purpose |
+|-------|---------|
+| `financial-advisor` | Portfolio analysis, asset allocation |
+| `binance` | Spot/futures, balances, orders |
+| `gate` | Gate.io markets, earn, positions |
+
+### n8n Automation
+| Skill | Purpose |
+|-------|---------|
+| `n8n-code-javascript` | JS Code nodes |
+| `n8n-code-python` | Python Code nodes |
+| `n8n-expression-syntax` | Expression validation |
+| `n8n-node-configuration` | Node config guidance |
+| `n8n-workflow-patterns` | Architecture patterns |
+| `n8n-validation-expert` | Error interpretation |
+| `n8n-mcp-tools-expert` | MCP tool usage |
+
+### Other
+| Skill | Purpose |
+|-------|---------|
+| `adversarial_review` | Debate invocation (Forge) |
+| `reunion` | Multi-agent meeting |
+| `travel-assistant` | Trip planning, flights, budget |
+| `crear_presupuesto` | Generate presupuestos |
+| `skill-creator` | Guided skill creation |
+
+## Scripts (Handlers)
+
+| Script | Used By | API |
+|--------|---------|-----|
+| `scripts/generate_image.py` | `generate_image` | Gemini Imagen 4.0 + Nano Banana |
+| `scripts/transcript_handler.py` | `process_video` | YouTube Transcript API |
+| `scripts/binance_handler.py` | `binance` | Binance API |
+| `scripts/gate_handler.py` | `gate` | Gate.io API |
 
 ## Development
 
@@ -77,3 +186,12 @@ allowed-tools: Tool1, Tool2
 
 # Content...
 ```
+
+## Env Vars
+
+Required keys in `.env`:
+- `GEMINI_API_KEY` — Image generation (Imagen, Nano Banana)
+- `OPENAI_API_KEY` — Audio transcription (Whisper)
+- `YOUTUBE_API_KEY` — Video metadata (optional, transcripts are free)
+- `BINANCE_API_KEY` / `BINANCE_SECRET_KEY` — Binance trading
+- `GATE_API_KEY` / `GATE_SECRET_KEY` — Gate.io trading

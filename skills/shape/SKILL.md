@@ -52,7 +52,7 @@ Load the appropriate template based on issue type for discovery questions and de
 | Pixel | Frontend, React/Next.js | `[Pixel]` |
 | Flux | Automation, n8n | `[Flux]` |
 | Hermes | Deploy, Vercel, monitoring | `[Hermes]` |
-| Sentinela | QA, E2E, Playwright | `[Sentinela]` |
+| Centinela | QA, E2E, Playwright | `[Centinela]` |
 | Lumen | SEO, schema | `[Lumen]` |
 
 ## Sub-issue Creation
@@ -128,6 +128,6 @@ User: I want to add a WhatsApp button to the storefront
 → Discovery: title, user, problem, success criteria
 → Creates SKY-45 in Linear
 → Asks: "Create agent sub-issues now?"
-  → Yes: Creates [Kokoro], [Pixel], [Sentinela] sub-issues
+  → Yes: Creates [Kokoro], [Pixel], [Centinela] sub-issues
   → No: User can run /refine SKY-45 later
 ```

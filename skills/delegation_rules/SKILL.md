@@ -1,6 +1,6 @@
 ---
 name: delegation-rules
-description: Guide Mentat's delegation decisions to specialist agents. Use when routing tasks to sub-agents (Kokoro, Pixel, Aurora, Flux, Hermes, Sentinela, Lumen) based on Linear sub-issues with [Agent] title prefix.
+description: Guide Mentat's delegation decisions to specialist agents. Use when routing tasks to sub-agents (Kokoro, Pixel, Aurora, Flux, Hermes, Centinela, Lumen) based on Linear sub-issues with [Agent] title prefix.
 ---
 
 # Delegation Rules
@@ -24,7 +24,7 @@ The agent name in brackets is the **delegation signal**. When Mentat sees a sub-
 | workflow, n8n, automation, webhook, integration | Flux | `[Flux]` | `flux-automation-specialist` |
 | deploy, vercel, CI/CD, performance, monitoring | Hermes | `[Hermes]` | `hermes-deployment-specialist` |
 | brand, visual, design system, moodboard, wireframe | Aurora | `[Aurora]` | `aurora-product-designer` |
-| test, E2E, QA, Playwright, regression | Sentinela | `[Sentinela]` | `sentinela-test-automation-expert` |
+| test, E2E, QA, Playwright, regression | Centinela | `[Centinela]` | `centinela-test-automation-expert` |
 | SEO, schema markup, Core Web Vitals | Lumen | `[Lumen]` | `lumen` |
 
 ## Delegation Flow
@@ -66,7 +66,7 @@ For full-stack features:
 3. Kokoro     → Backend/API first
 4. Pixel      → Frontend after API ready
 5. Flux       → Automation/integrations
-6. Sentinela  → E2E tests after frontend
+6. Centinela  → E2E tests after frontend
 7. Hermes     → Deploy last
 8. Mentat     → Final validation
 ```
@@ -76,7 +76,7 @@ For full-stack features:
 | Agent | Waits For |
 |-------|-----------|
 | Pixel | Kokoro (API), Aurora (design) |
-| Sentinela | Pixel (test IDs) |
+| Centinela | Pixel (test IDs) |
 | Hermes | All implementation done |
 
 ## Delegation Protocol
@@ -142,9 +142,9 @@ Parent: SKY-45 [Feature] WhatsApp button
 │   → Mentat answers: "All 4"
 │   → Agent completes
 │   → Mentat comments, marks Done
-└── [Sentinela] E2E tests for WhatsApp flow
+└── [Centinela] E2E tests for WhatsApp flow
     → Blocked until Pixel done
-    → Delegate to sentinela-test-automation-expert
+    → Delegate to centinela-test-automation-expert
     → Mentat comments, marks Done
 ```
 

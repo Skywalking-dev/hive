@@ -10,6 +10,7 @@ dependencies = [
     "google-api-python-client>=2.187.0",
     "flights>=0.7.0",
     "amadeus>=12.0.0",
+    "google-generativeai>=0.8.6",
 ]
 
 [project.scripts]

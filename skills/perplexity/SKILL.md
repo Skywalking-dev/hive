@@ -6,31 +6,32 @@ allowed-tools: Bash, Read
 
 # Perplexity API
 
-Web search + grounded LLM responses via Python script. Three APIs: Sonar (chat+search), Search (raw results), Agent (multi-provider).
+Web search + grounded LLM responses via bash/curl. Three APIs: Sonar (chat+search), Search (raw results), Agent (multi-provider).
 
 ## Prerequisites
 - `PERPLEXITY_API_KEY` in `.env`
+- `jq` installed
 
 ## Quick Commands
 
 ```bash
 # Ask a question (Sonar - default, includes citations)
-python hive/scripts/perplexity_handler.py ask "What are the latest developments in AI?"
+hive/scripts/perplexity_handler.sh ask "What are the latest developments in AI?"
 
 # Ask with specific model
-python hive/scripts/perplexity_handler.py ask "Explain quantum computing" --model sonar-pro
+hive/scripts/perplexity_handler.sh ask "Explain quantum computing" --model sonar-pro
 
 # Search only (raw web results, no LLM summary)
-python hive/scripts/perplexity_handler.py search "best python web frameworks 2026"
+hive/scripts/perplexity_handler.sh search "best python web frameworks 2026"
 
 # Search with filters
-python hive/scripts/perplexity_handler.py search "machine learning papers" --domains arxiv.org,scholar.google.com --max-results 5
+hive/scripts/perplexity_handler.sh search "machine learning papers" --domains arxiv.org,scholar.google.com --max-results 5
 
 # Agent API (use third-party models with web search)
-python hive/scripts/perplexity_handler.py agent "Compare GPT-5 vs Claude Opus" --model openai/gpt-5.2
+hive/scripts/perplexity_handler.sh agent "Compare GPT-5 vs Claude Opus" --model openai/gpt-5.2
 
 # Streaming response
-python hive/scripts/perplexity_handler.py ask "Summarize today's tech news" --stream
+hive/scripts/perplexity_handler.sh ask "Summarize today's tech news" --stream
 ```
 
 ## APIs
@@ -40,16 +41,16 @@ Best for: Q&A with web-grounded citations. OpenAI-compatible format.
 
 ```bash
 # Basic
-python hive/scripts/perplexity_handler.py ask "query"
+hive/scripts/perplexity_handler.sh ask "query"
 
 # With filters
-python hive/scripts/perplexity_handler.py ask "query" --domains example.com --recency month
+hive/scripts/perplexity_handler.sh ask "query" --domains example.com --recency month
 
 # Structured JSON output
-python hive/scripts/perplexity_handler.py ask "Top 3 AI startups with funding" --json-schema '{"type":"object","properties":{"startups":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"funding":{"type":"string"},"focus":{"type":"string"}},"required":["name","funding","focus"]}}},"required":["startups"]}'
+hive/scripts/perplexity_handler.sh ask "Top 3 AI startups with funding" --json-schema '{"type":"object","properties":{"startups":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string"},"funding":{"type":"string"},"focus":{"type":"string"}},"required":["name","funding","focus"]}}},"required":["startups"]}'
 
 # With system prompt
-python hive/scripts/perplexity_handler.py ask "query" --system "You are a research assistant. Be precise and cite sources."
+hive/scripts/perplexity_handler.sh ask "query" --system "You are a research assistant. Be precise and cite sources."
 ```
 
 **Models:** `sonar` (fast), `sonar-pro` (thorough), `sonar-reasoning` (step-by-step), `sonar-reasoning-pro` (deep reasoning)
@@ -58,7 +59,7 @@ python hive/scripts/perplexity_handler.py ask "query" --system "You are a resear
 Best for: Raw ranked web results without LLM processing.
 
 ```bash
-python hive/scripts/perplexity_handler.py search "query" [options]
+hive/scripts/perplexity_handler.sh search "query" [options]
   --max-results 10          # 1-20, default 10
   --domains arxiv.org       # comma-separated allowlist
   --exclude-domains spam.com # comma-separated denylist (cannot mix with --domains)
@@ -70,7 +71,7 @@ python hive/scripts/perplexity_handler.py search "query" [options]
 Best for: Multi-provider models (OpenAI, Anthropic, Google) with web search tool.
 
 ```bash
-python hive/scripts/perplexity_handler.py agent "query" [options]
+hive/scripts/perplexity_handler.sh agent "query" [options]
   --model openai/gpt-5.2    # or any supported provider/model
   --tools web_search         # default; also: fetch_url
   --max-tokens 1000
