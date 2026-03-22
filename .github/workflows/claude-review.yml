@@ -7,22 +7,23 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
       id-token: write
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Claude Code Review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          model: claude-sonnet-4-20250514
-          timeout_minutes: 10
-          direct_prompt: |
+          claude_args: "--model claude-sonnet-4-20250514"
+          prompt: |
             Review this PR as a strict senior engineer. For every file changed:
 
             1. **Bugs & correctness**: null safety, off-by-one, race conditions, missing error handling
