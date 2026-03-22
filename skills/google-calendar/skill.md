@@ -6,77 +6,62 @@ allowed-tools: Bash, Read
 
 # Google Calendar API
 
-Read-only calendar access via Python script.
+Read-only calendar access via unified bash handler.
 
 ## Prerequisites
 
-- `GMAIL_CLIENT_ID` in `.env` (or `GOOGLE_CALENDAR_CLIENT_ID`)
-- `GMAIL_CLIENT_SECRET` in `.env` (or `GOOGLE_CALENDAR_CLIENT_SECRET`)
-- `GOOGLE_CALENDAR_REFRESH_TOKEN` in `.env`
-
-## First-time Setup
-
-```bash
-python scripts/google_calendar_handler.py setup
-```
+- `GMAIL_CLIENT_ID` in `.env` (or `GOOGLE_CLIENT_ID` / `GOOGLE_CALENDAR_CLIENT_ID`)
+- `GMAIL_CLIENT_SECRET` in `.env` (or `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALENDAR_CLIENT_SECRET`)
+- `GOOGLE_CALENDAR_REFRESH_TOKEN` in `.env` (or `GOOGLE_REFRESH_TOKEN`)
 
 ## Commands
 
 ```bash
 # Today's events
-python scripts/google_calendar_handler.py today
+scripts/google_handler.sh calendar today
 
 # This week's events
-python scripts/google_calendar_handler.py week
+scripts/google_handler.sh calendar week
 
 # Events for N days
-python scripts/google_calendar_handler.py list [--days=7]
+scripts/google_handler.sh calendar list --days=7
 
 # Get event details
-python scripts/google_calendar_handler.py get <event_id>
+scripts/google_handler.sh calendar get <event_id>
 
 # List calendars
-python scripts/google_calendar_handler.py calendars
+scripts/google_handler.sh calendar calendars
 
 # Check free/busy availability
-python scripts/google_calendar_handler.py freebusy <start_date> <end_date>
+scripts/google_handler.sh calendar freebusy 2026-02-10 2026-02-14
 
 # Search events
-python scripts/google_calendar_handler.py search "query" [--days=30]
+scripts/google_handler.sh calendar search "standup" --days=30
+
+# Create event
+scripts/google_handler.sh calendar create --summary="Meeting" --start="2026-04-01T10:00:00-03:00" --end="2026-04-01T11:00:00-03:00" --desc="Agenda" --loc="Zoom"
+
+# Delete event
+scripts/google_handler.sh calendar delete <event_id>
 ```
 
 ## Options
 
-- `--calendar=<id>` - Use specific calendar (default: `primary`)
-- `--days=<n>` - Number of days to query
-
-## Examples
-
-```bash
-# Check today's schedule
-python scripts/google_calendar_handler.py today
-
-# See week ahead
-python scripts/google_calendar_handler.py week
-
-# Next 14 days
-python scripts/google_calendar_handler.py list --days=14
-
-# Search for standup meetings
-python scripts/google_calendar_handler.py search "standup" --days=7
-
-# Check availability for date range
-python scripts/google_calendar_handler.py freebusy 2026-02-10 2026-02-14
-
-# List all calendars
-python scripts/google_calendar_handler.py calendars
-```
+- `--calendar=<id>` — Use specific calendar (default: `primary`)
+- `--days=<n>` — Number of days to query
+- `--summary=<title>` — Event title (create)
+- `--start=<iso>` — ISO 8601 datetime (create)
+- `--end=<iso>` — ISO 8601 datetime (create)
+- `--desc=<text>` — Description (create)
+- `--loc=<text>` — Location (create)
 
 ## Output
 
-All commands return JSON with `{success, data}` wrapper:
+All commands return JSON `{"success": true, "data": {...}}`:
 - `today`/`week`/`list`: `{period: {start, end}, count, events: [{id, summary, description, location, start, end, isAllDay, status, htmlLink, hangoutLink, attendees, organizer}]}`
 - `get`: Single event object
 - `calendars`: `[{id, summary, description, primary, accessRole, backgroundColor}]`
 - `freebusy`: `{period, busySlots: [{start, end}], busyCount}`
 - `search`: `{query, days, count, events: [...]}`
+- `create`: `{id, summary, htmlLink, start, end}`
+- `delete`: `{deleted: true, eventId}`

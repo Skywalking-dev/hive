@@ -6,7 +6,7 @@ allowed-tools: Bash, Read
 
 # Google Docs API
 
-Read, create, update, and export Google Docs with Markdown conversion via Python script.
+Read, create, update, and export Google Docs with Markdown conversion via unified bash handler.
 
 ## Guardrails
 
@@ -15,96 +15,68 @@ Read, create, update, and export Google Docs with Markdown conversion via Python
 
 ## Prerequisites
 
-- `GMAIL_CLIENT_ID` in `.env` (or `GOOGLE_DOCS_CLIENT_ID`)
-- `GMAIL_CLIENT_SECRET` in `.env` (or `GOOGLE_DOCS_CLIENT_SECRET`)
-- `GOOGLE_DOCS_REFRESH_TOKEN` in `.env`
+- `GMAIL_CLIENT_ID` in `.env` (or `GOOGLE_CLIENT_ID` / `GOOGLE_DOCS_CLIENT_ID`)
+- `GMAIL_CLIENT_SECRET` in `.env` (or `GOOGLE_CLIENT_SECRET` / `GOOGLE_DOCS_CLIENT_SECRET`)
+- `GOOGLE_DOCS_REFRESH_TOKEN` in `.env` (or `GOOGLE_REFRESH_TOKEN`)
 
 APIs required: Google Docs API + Google Drive API.
-
-## First-time Setup
-
-```bash
-python scripts/google_docs_handler.py setup
-```
 
 ## Commands
 
 ```bash
 # Get doc as Markdown
-python scripts/google_docs_handler.py get <id_or_url>
+scripts/google_handler.sh docs read <id_or_url>
 
 # Get doc with rich metadata (suggestions)
-python scripts/google_docs_handler.py get <id_or_url> --rich
+scripts/google_handler.sh docs read <id_or_url> --rich
 
 # Create a new doc
-python scripts/google_docs_handler.py create <title> [--body="# Markdown content"]
+scripts/google_handler.sh docs create "Title" [--body="# Markdown content"]
 
-# Update doc content
-python scripts/google_docs_handler.py update <id_or_url> --body="## New section"
-python scripts/google_docs_handler.py update <id_or_url> --body="# Replace all" --replace
+# Create doc from stdin
+cat notes.md | scripts/google_handler.sh docs create "From file" --body-stdin
+
+# Update doc content (append)
+scripts/google_handler.sh docs update <id_or_url> --body="## New section"
+
+# Update doc content (replace all)
+scripts/google_handler.sh docs update <id_or_url> --body="# Replace all" --replace
 
 # List recent docs
-python scripts/google_docs_handler.py list [--limit=10]
+scripts/google_handler.sh docs list [--limit=10]
 
 # Search docs
-python scripts/google_docs_handler.py search "query" [--limit=10]
+scripts/google_handler.sh docs search "query" [--limit=10]
 
 # Export doc
-python scripts/google_docs_handler.py export <id_or_url> [--format=md]
+scripts/google_handler.sh docs export <id_or_url> [--format=md]
+
+# Export binary formats (redirect to file)
+scripts/google_handler.sh docs export abc123 --format=pdf --output=doc.pdf
 ```
 
 Supported export formats: `md`, `txt`, `html`, `pdf`, `docx`, `epub`.
-Binary formats (pdf/docx/epub) output raw bytes - redirect to file:
-```bash
-python scripts/google_docs_handler.py export abc123 --format=pdf > doc.pdf
-```
 
 ## Options
 
-- `--body=<markdown>` - Markdown content for create/update
-- `--body-stdin` - Read content from stdin
-- `--replace` - Replace existing content (with `update`)
-- `--rich` - Get metadata and suggestions count (with `get`)
-- `--format=<fmt>` - Export format: md, txt, html, pdf, docx, epub
-- `--limit=<n>` - Number of results (default: 10)
+- `--body=<markdown>` — Markdown content for create/update
+- `--body-stdin` — Read content from stdin
+- `--replace` — Replace existing content (with `update`)
+- `--rich` — Get metadata and suggestions count (with `read`)
+- `--format=<fmt>` — Export format: md, txt, html, pdf, docx, epub
+- `--output=<path>` — Output file path for binary export
+- `--limit=<n>` — Number of results (default: 10)
 
 Accepts full Google Docs URLs or bare document IDs.
 
-## Examples
-
-```bash
-# List recent docs
-python scripts/google_docs_handler.py list --limit=5
-
-# Read a doc by URL
-python scripts/google_docs_handler.py get "https://docs.google.com/document/d/abc123/edit"
-
-# Create doc with inline Markdown
-python scripts/google_docs_handler.py create "Sprint Notes" --body="# Sprint 42\n\n- Item 1"
-
-# Create doc piping from file
-cat notes.md | python scripts/google_docs_handler.py create "From file" --body-stdin
-
-# Append to existing doc
-python scripts/google_docs_handler.py update abc123 --body="## Added section"
-
-# Replace entire content
-python scripts/google_docs_handler.py update abc123 --body="# Fresh start" --replace
-
-# Search docs
-python scripts/google_docs_handler.py search "presupuesto" --limit=5
-
-# Export to PDF
-python scripts/google_docs_handler.py export abc123 --format=pdf > doc.pdf
-```
-
 ## Output
 
-All commands return JSON with `{success, data}` wrapper:
-- `get`: `{documentId, title, url, modifiedTime, createdTime, content}`
-- `get --rich`: `{documentId, title, url, revisionId, suggestionsCount, content}`
-- `create`: `{success, documentId, title, url}`
-- `update`: `{success, documentId, title, url, updatesApplied}`
+All commands return JSON `{"success": true, "data": {...}}`:
+- `read`: `{documentId, title, url, modifiedTime, createdTime, content}`
+- `read --rich`: `{documentId, title, url, revisionId, suggestionsCount, content}`
+- `create`: `{documentId, title, url}`
+- `update`: `{documentId, title, url, updatesApplied}`
 - `list`: `{count, documents: [{documentId, title, modifiedTime, createdTime, url, owner}]}`
 - `search`: `{query, count, documents: [...]}`
-- `export`: `{documentId, format, content}` (text) or raw binary (pdf/docx/epub)
+- `export (text)`: `{documentId, format, content}`
+- `export (binary with --output)`: `{documentId, format, outputPath}`

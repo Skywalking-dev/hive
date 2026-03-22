@@ -101,7 +101,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | Skill | Purpose |
 |-------|---------|
 | `frontend-design` | Distinctive UI, no generic AI look |
-| `pdf-anthropic` | PDF extract, merge, fill forms |
+| `pdf` | PDF extract, merge, fill forms |
 | `vercel` | Deploy, env, logs, cron |
 | `supabase` | DB queries, migrations, auth, logs |
 | `report-viewer` | HTML dashboards, auto-open in browser |
