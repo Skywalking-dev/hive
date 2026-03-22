@@ -1,0 +1,48 @@
+name: Claude Issue Handler
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  claude-fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_non_write_users: "*"
+          branch_prefix: "claude/"
+
+          prompt: |
+            You are a maintainer of Hive, an AI skills repo for Claude Code.
+            Read the CLAUDE.md for full project context.
+
+            A user opened issue #${{ github.event.issue.number }}: "${{ github.event.issue.title }}"
+
+            ${{ github.event.issue.body }}
+
+            Instructions:
+            1. Analyze the issue — understand what's broken or requested
+            2. If you can implement a fix or improvement:
+               - Make the minimal changes needed
+               - Update CHANGELOG.md under [Unreleased]
+               - Test the change if possible (e.g. validate JSON, check file exists)
+               - Create a PR referencing "Closes #${{ github.event.issue.number }}"
+            3. If the issue is unclear or requires human decision:
+               - Comment on the issue explaining what you found and what decisions are needed
+               - Do NOT create a PR with speculative changes
