@@ -6,6 +6,16 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 
 ## [Unreleased]
 
+### Added
+- Agent frontmatter: `memory: project` on all 9 agents (persistent knowledge across sessions)
+- Agent frontmatter: `isolation: worktree` on Pixel, Centinela, Kokoro (parallel work without conflicts)
+- Agent frontmatter: `initialPrompt` on 6 agents (auto-load key docs on start)
+- Skill frontmatter: `paths:` on 7 n8n skills + supabase (context-aware activation)
+- Skill frontmatter: `context: fork` on process_video + perplexity (isolated subagent execution)
+- `scripts/auto-qa-check.sh` — Stop hook that blocks session if tests fail
+- `api/cron/monitor.py` — ecosystem monitor (GitHub releases + npm → Slack webhook)
+- `vercel.json` — hourly cron for ecosystem monitor
+
 ### Fixed
 - Anthropic pack: repo URL updated from `anthropics/claude-code-skills` to `anthropics/skills` (#5)
 - Anthropic pack: skill name `pdf-anthropic` → `pdf` to match new repo structure

@@ -29,6 +29,8 @@ hive/
 ├── scripts/           ← Python API handlers
 ├── docs/              ← security model, env reference
 ├── .mcp.json          ← MCP servers config (gws, n8n, etc.)
+├── api/cron/           ← Vercel serverless functions (ecosystem monitor)
+├── vercel.json        ← cron schedule
 └── release.py         ← sync to Cursor, Gemini CLI, Codex
 ```
 
