@@ -2,6 +2,7 @@
 name: perplexity
 description: Search the web and query LLMs with real-time data via Perplexity API. Use when user needs web research, current information, grounded answers with citations, or wants to search using Perplexity's Sonar models. Triggers on web search, research queries, "ask perplexity", current events, or real-time data needs.
 allowed-tools: Bash, Read
+context: fork
 ---
 
 # Perplexity API

@@ -2,6 +2,10 @@
 name: supabase
 description: Query Supabase database and manage projects via MCP. Use when user needs database queries, migrations, auth operations, or logs. Triggers on SQL, table names, auth, migrations.
 allowed-tools: Read, mcp__supabase__execute_sql, mcp__supabase__list_migrations, mcp__supabase__get_logs, mcp__supabase__generate_typescript_types
+paths:
+  - "**/supabase/**"
+  - "**/migrations/**"
+  - "**/*.sql"
 ---
 
 # Supabase MCP

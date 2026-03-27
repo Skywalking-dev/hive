@@ -3,6 +3,7 @@ name: process_video
 description: "Watch: extract transcripts from YouTube or local video files, then analyze content for topics, insights, and connections. Replaces extract_transcript + video-analysis as a single sense."
 argument-hint: <youtube_url_or_file_path> [--analyze] [--languages es,en]
 allowed-tools: Bash(uv run:*), Bash(ffmpeg:*), Read
+context: fork
 ---
 
 # Process Video
