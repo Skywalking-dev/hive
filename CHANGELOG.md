@@ -12,7 +12,6 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 - Agent frontmatter: `initialPrompt` on 6 agents (auto-load key docs on start)
 - Skill frontmatter: `paths:` on 7 n8n skills + supabase (context-aware activation)
 - Skill frontmatter: `context: fork` on process_video + perplexity (isolated subagent execution)
-- `scripts/auto-qa-check.sh` — Stop hook that blocks session if tests fail
 - `api/cron/monitor.py` — ecosystem monitor (GitHub releases + npm → Slack webhook)
 - `vercel.json` — hourly cron for ecosystem monitor
 
