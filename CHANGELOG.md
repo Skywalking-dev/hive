@@ -15,6 +15,9 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 - `api/cron/monitor.py` — ecosystem monitor (GitHub releases + npm → Slack webhook)
 - `vercel.json` — hourly cron for ecosystem monitor
 
+### Changed
+- Root CLAUDE.md: added /batch and /simplify to commands, agent capabilities to delegation matrix
+
 ### Fixed
 - Anthropic pack: repo URL updated from `anthropics/claude-code-skills` to `anthropics/skills` (#5)
 - Anthropic pack: skill name `pdf-anthropic` → `pdf` to match new repo structure
