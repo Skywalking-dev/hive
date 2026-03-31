@@ -246,6 +246,21 @@ def main():
         for e in errors:
             print(f"  ERROR: {e}", file=sys.stderr)
 
+    # Set GitHub Actions outputs
+    github_output = os.environ.get("GITHUB_OUTPUT")
+    if github_output:
+        slim = [
+            {"name": u["name"], "version": u["version"], "url": u["url"],
+             "source": u["source"], "context": u["context"]}
+            for u in updates
+        ]
+        with open(github_output, "a") as f:
+            f.write(f"has_updates={'true' if updates else 'false'}\n")
+            # Use delimiter for multiline JSON
+            f.write("updates_json<<EOJSON\n")
+            f.write(json.dumps(slim))
+            f.write("\nEOJSON\n")
+
     if updates:
         notified = notify_slack(updates)
         for u in updates:

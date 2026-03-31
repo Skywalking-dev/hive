@@ -6,15 +6,155 @@ on:
   workflow_dispatch: # manual trigger
 
 jobs:
-  monitor:
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      has_updates: ${{ steps.monitor.outputs.has_updates }}
+      updates_json: ${{ steps.monitor.outputs.updates_json }}
     steps:
       - uses: actions/checkout@v4
 
       - uses: astral-sh/setup-uv@v5
 
       - name: Check ecosystem updates
+        id: monitor
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
         run: uv run scripts/monitor.py
+
+  maintain:
+    needs: check
+    if: needs.check.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto-maintain Hive
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_non_write_users: "*"
+          branch_prefix: "hive/auto-maintain-"
+          prompt: |
+            You are the maintainer of Hive, an AI skills + agents repo for Claude Code.
+            Read CLAUDE.md for full project context.
+
+            The ecosystem monitor detected new releases:
+
+            ```json
+            ${{ needs.check.outputs.updates_json }}
+            ```
+
+            Your job:
+            1. For each update, fetch and read the FULL release notes / changelog
+            2. Identify what changed that affects Hive:
+               - New CLI flags, tools, or capabilities → update relevant skills
+               - Deprecated features → remove or update references
+               - New best practices → adapt agent definitions or skills
+               - Breaking changes → fix affected scripts or workflows
+               - New skill format or plugin changes → update plugin manifest
+            3. Make the minimal, correct changes. Do NOT speculatively add features.
+            4. Update CHANGELOG.md under [Unreleased] with what you changed and why
+            5. Create a PR with a clear title and description
+
+            If nothing in the release affects Hive, do NOT create a PR.
+
+            Focus on accuracy over completeness — better to miss a minor update than introduce wrong changes.
+
+      - name: Notify Slack with PR info
+        if: always()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPDATES_JSON: ${{ needs.check.outputs.updates_json }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, urllib.request
+
+          token = os.environ["SLACK_BOT_TOKEN"]
+          updates = json.loads(os.environ.get("UPDATES_JSON", "[]"))
+          run_id = os.environ["RUN_ID"]
+          gh_token = os.environ.get("GITHUB_TOKEN", "")
+          repo = "Skywalking-dev/hive"
+          run_url = f"https://github.com/{repo}/actions/runs/{run_id}"
+
+          # Find auto-maintain PR
+          pr_url = None
+          try:
+              req = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/pulls?state=open&sort=created&direction=desc&per_page=5",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {gh_token}",
+                      "User-Agent": "hive-monitor/1.0",
+                  },
+              )
+              with urllib.request.urlopen(req, timeout=10) as resp:
+                  prs = json.loads(resp.read())
+              for pr in prs:
+                  if pr["head"]["ref"].startswith("hive/auto-maintain-"):
+                      pr_url = pr["html_url"]
+                      break
+          except Exception:
+              pass
+
+          names = ", ".join(f"{u['name']} {u['version']}" for u in updates)
+
+          blocks = [
+              {
+                  "type": "header",
+                  "text": {"type": "plain_text", "text": "Hive Auto-Maintain"},
+              },
+              {
+                  "type": "section",
+                  "text": {"type": "mrkdwn", "text": f"*Releases:* {names}"},
+              },
+          ]
+
+          if pr_url:
+              blocks.append({
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": f":white_check_mark: *PR creado:* <{pr_url}|Ver PR>\nRevisalo y mergealo cuando quieras.",
+                  },
+              })
+          else:
+              blocks.append({
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": f":information_source: No se creó PR — releases no afectan Hive.\n<{run_url}|Ver workflow run>",
+                  },
+              })
+
+          blocks.append({"type": "divider"})
+
+          payload = {
+              "channel": "C0APTL4JLCE",
+              "text": f"Hive Auto-Maintain: {names}",
+              "blocks": blocks,
+          }
+
+          req = urllib.request.Request(
+              "https://slack.com/api/chat.postMessage",
+              data=json.dumps(payload).encode(),
+              headers={
+                  "Content-Type": "application/json; charset=utf-8",
+                  "Authorization": f"Bearer {token}",
+              },
+              method="POST",
+          )
+          urllib.request.urlopen(req, timeout=10)
+          PYEOF
