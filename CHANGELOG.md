@@ -12,11 +12,22 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 - Agent frontmatter: `initialPrompt` on 6 agents (auto-load key docs on start)
 - Skill frontmatter: `paths:` on 7 n8n skills + supabase (context-aware activation)
 - Skill frontmatter: `context: fork` on process_video + perplexity (isolated subagent execution)
-- `api/cron/monitor.py` — ecosystem monitor (GitHub releases + npm → Slack webhook)
-- `vercel.json` — hourly cron for ecosystem monitor
+- Ecosystem monitor via GitHub Actions (`scripts/monitor.py` + `.github/workflows/monitor.yml`)
+- Auto-maintain: Claude Code Action analyzes releases and opens PRs when Hive needs updates
+- Slack #hive channel for ecosystem notifications (bot token + chat.postMessage)
+- `generate_image` skill: Pro/Banana2 models, sketch-to-render workflow, decision tree, anti-patterns
+- Linear state transitions in `dev`, `refine`, `shape` skills
 
 ### Changed
 - Root CLAUDE.md: added /batch and /simplify to commands, agent capabilities to delegation matrix
+- Renamed miicel.io → micelio across skills and agents
+- Monitor migrated from Vercel cron to GitHub Actions (Hobby plan limitation)
+- Monitor Slack notifications use bot token instead of webhook
+
+### Removed
+- `api/cron/monitor.py` — replaced by `scripts/monitor.py`
+- `vercel.json` — no longer needed (cron moved to GitHub Actions)
+- Vercel project for hive
 
 ### Fixed
 - Anthropic pack: repo URL updated from `anthropics/claude-code-skills` to `anthropics/skills` (#5)
