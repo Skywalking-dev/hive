@@ -13,7 +13,7 @@ Execute E2E tests in collaborative mode where Claude monitors logs in real-time 
 
 ```bash
 # Terminal 1: Execute test in headed mode with log capture
-cd projects/miicel.io
+cd projects/micelio
 npm run test:e2e -- --project=mercadopago-sandbox tests/e2e/specs/complete-purchase-flow-mercadopago-sandbox.spec.ts --headed --reporter=list,html 2>&1 | tee test-debug.log
 
 # Terminal 2: Monitor logs in real-time (for Claude)

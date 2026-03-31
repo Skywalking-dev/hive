@@ -22,7 +22,7 @@ Issue lifecycle management via Linear.
 | Local Folder | Linear Project | Code |
 |--------------|----------------|------|
 | `docs/backlog/` | Skywalking (default) | SKY |
-| `projects/miicel.io/` | miicel.io | MIIC |
+| `projects/micelio/` | micelio.skyw.app | MIIC |
 | `projects/natu/` | Natu | NATU |
 | `projects/{slug}/` | {Project Name} | {CODE} |
 
@@ -101,7 +101,7 @@ User ready to deploy?
 
 ```
 User mentions project?
-├── miicel.io, miic → Project: miicel.io
+├── micelio.skyw.app, miic → Project: micelio.skyw.app
 ├── natu → Project: Natu
 ├── SKY, skywalking, internal → Project: Skywalking (default)
 └── Ask if unclear
