@@ -17,7 +17,7 @@ import os
 import sys
 from datetime import datetime, timezone, timedelta
 
-POLL_INTERVAL_MINUTES = 75  # cron every 60min + 15min buffer
+POLL_INTERVAL_MINUTES = 375  # cron every 6h + 15min buffer
 SLACK_CHANNEL = "C0APTL4JLCE"  # #hive
 
 GITHUB_SOURCES = [
