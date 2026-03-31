@@ -100,3 +100,4 @@ skills/n8n-automations/
 *.log
 *.tmp
 node_modules/
+.vercel
