@@ -49,6 +49,14 @@
         "-y",
         "chrome-devtools-mcp@latest"
       ]
+    },
+    "stitch": {
+      "description": "Google Stitch — design-to-code, UI generation, React components",
+      "type": "url",
+      "url": "https://stitch.withgoogle.com/mcp/sse",
+      "env": {
+        "STITCH_API_KEY": "${STITCH_API_KEY}"
+      }
     }
   }
 }

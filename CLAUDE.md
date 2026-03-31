@@ -17,6 +17,7 @@ Hive es el repositorio central de AI tooling para Skywalking. Provee skills, age
 | Slack | Team communication |
 | gws (Google Workspace CLI) | All Google APIs via CLI + MCP (Sheets, Tasks, Chat, etc.) |
 | Gemini API | Image generation (Imagen 4.0, Nano Banana), TTS |
+| Google Stitch | Design-to-code, UI generation, React components (MCP) |
 
 ## Architecture
 
