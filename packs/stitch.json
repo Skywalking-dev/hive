@@ -1,0 +1,9 @@
+{
+  "name": "stitch",
+  "description": "Google Labs Stitch skills — shadcn/ui component integration",
+  "source": "github",
+  "repo": "https://github.com/google-labs-code/stitch-skills.git",
+  "path": "skills",
+  "license": "Apache-2.0",
+  "skills": ["shadcn-ui"]
+}

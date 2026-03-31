@@ -1,0 +1,9 @@
+{
+  "name": "gemini",
+  "description": "Gemini API dev skills from Google — models, SDKs, multimodal, function calling",
+  "source": "github",
+  "repo": "https://github.com/google-gemini/gemini-skills.git",
+  "path": "skills",
+  "license": "Apache-2.0",
+  "skills": ["gemini-api-dev"]
+}
