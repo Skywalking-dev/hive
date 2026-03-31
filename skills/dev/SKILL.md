@@ -25,15 +25,23 @@ Mentat orchestrates agent work on Linear issues.
 
 ```
 1. Load parent issue from Linear
-2. Get all sub-issues
-3. Check dependencies (order matters)
-4. For each sub-issue with [Agent] prefix:
-   a. Delegate to agent via Task tool
-   b. Agent implements
-   c. Agent comments on completion
-   d. Mentat validates acceptance criteria
-5. When all sub-issues Done → parent moves forward
+2. Move parent to "In Progress" via linear_updateIssue
+3. Get all sub-issues
+4. Check dependencies (order matters)
+5. For each sub-issue with [Agent] prefix:
+   a. Move sub-issue to "In Progress"
+   b. Delegate to agent via Task tool
+   c. Agent implements
+   d. Agent comments on completion
+   e. Mentat validates acceptance criteria
+   f. Move sub-issue to "Done"
+6. When all sub-issues Done → move parent to "In Review"
 ```
+
+**State transitions:**
+- On `/dev` start → parent to "In Progress"
+- Each sub-issue: "To Do" → "In Progress" → "Done"
+- All sub-issues done → parent to "In Review"
 
 ## Agent Detection
 

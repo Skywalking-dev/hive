@@ -41,7 +41,9 @@ Technical breakdown of shaped issues → agent sub-issues.
 4. **Ask confirmation** → AskUserQuestion to confirm agents
 5. **Agent reunion** → Run `/reunion` with the confirmed agents to align on technical approach, resolve conflicts, and produce concrete commitments before creating sub-issues. The reunion output (agreements, resolved conflicts, timeline) feeds directly into the sub-issue specs.
 6. **Create sub-issues** → One per agent with technical specs (informed by reunion agreements)
-7. **Update parent** → Move to "Refining" then "To Do" when ready
+7. **Move parent to "To Do"** → `linear_updateIssue` once all sub-issues are created
+
+**State transitions:** On start → move parent to "Refining". On completion → move parent to "To Do".
 
 ## Sub-issue Convention
 

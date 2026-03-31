@@ -89,13 +89,15 @@ All acceptance criteria MUST use EARS (Easy Approach to Requirements Syntax):
 
 1. Ask type → load template
 2. Follow template's discovery questions (batches of 2-3)
-3. **Write AC in EARS syntax** — convert user's free-text criteria to EARS format
-4. **Validate scope:** If >5 acceptance criteria, warn and suggest split (see below)
-5. **Flag ambiguities:** Add `[NEEDS CLARIFICATION]` for anything unclear
-6. Check duplicates: `linear_searchIssues`
-7. Create parent issue using template
-8. Optionally add agent sub-issues (or defer to `/refine`)
-9. Confirm with Linear URL
+3. **Ask which Linear project** to associate (e.g., Micelio, Pandora, etc.). If unclear from context, ask explicitly. Always set `projectId` on issue creation.
+4. **Write AC in EARS syntax** — convert user's free-text criteria to EARS format
+5. **Validate scope:** If >5 acceptance criteria, warn and suggest split (see below)
+6. **Flag ambiguities:** Add `[NEEDS CLARIFICATION]` for anything unclear
+7. Check duplicates: `linear_searchIssues`
+8. Create parent issue using template (with `projectId`), state = **Backlog**
+9. Optionally add agent sub-issues (or defer to `/refine`)
+10. **Move issue to "Shaping" state** via `linear_updateIssue` once shape is complete
+11. Confirm with Linear URL
 
 ## Scope Validation (Anti-Waterfall Check)
 
