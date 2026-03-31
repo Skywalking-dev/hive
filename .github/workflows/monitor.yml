@@ -109,18 +109,25 @@ jobs:
           except Exception:
               pass
 
-          names = ", ".join(f"{u['name']} {u['version']}" for u in updates)
+          blocks = []
 
-          blocks = [
-              {
+          for u in updates:
+              icon = ":github:" if u.get("source") == "github" else ":package:"
+              blocks.append({
                   "type": "header",
-                  "text": {"type": "plain_text", "text": "Hive Auto-Maintain"},
-              },
-              {
+                  "text": {"type": "plain_text", "text": f"{u['name']} → {u['version']}"},
+              })
+              blocks.append({
                   "type": "section",
-                  "text": {"type": "mrkdwn", "text": f"*Releases:* {names}"},
-              },
-          ]
+                  "text": {"type": "mrkdwn", "text": f"{icon} *<{u['url']}|Ver release>*"},
+              })
+              if u.get("context"):
+                  blocks.append({
+                      "type": "section",
+                      "text": {"type": "mrkdwn", "text": f"*Impacto Skywalking:* {u['context']}"},
+                  })
+
+          blocks.append({"type": "divider"})
 
           if pr_url:
               blocks.append({
@@ -139,8 +146,7 @@ jobs:
                   },
               })
 
-          blocks.append({"type": "divider"})
-
+          names = ", ".join(f"{u['name']} {u['version']}" for u in updates)
           payload = {
               "channel": "C0APTL4JLCE",
               "text": f"Hive Auto-Maintain: {names}",

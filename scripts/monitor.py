@@ -262,10 +262,8 @@ def main():
             f.write("\nEOJSON\n")
 
     if updates:
-        notified = notify_slack(updates)
         for u in updates:
             print(f"  {u['name']} → {u['version']}")
-        print(f"  Slack notified: {notified}")
     else:
         print("  No new updates")
 
