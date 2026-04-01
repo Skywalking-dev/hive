@@ -7,6 +7,14 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 ## [Unreleased]
 
 ### Added
+- `ship_it` skill: simplify phase, Linear close, session inventory, token tracking in final report
+- `blender` skill: 3D modeling via Blender MCP
+- `technical-drawing` skill: ISO-standard SVG construction drawings
+- `wrap` skill: end-of-session summary and conversation rename
+- `scripts/gemini_handler.sh`: Gemini API handler (ask, search, embed)
+- `scripts/openai_handler.sh`: OpenAI API handler (ask, responses, embeddings)
+- `scripts/telegram_sketch_bot.py`: Telegram sketch-to-render bot via Gemini Pro
+- `.gitignore`: cache/ directory excluded
 - Agent frontmatter: `memory: project` on all 9 agents (persistent knowledge across sessions)
 - Agent frontmatter: `isolation: worktree` on Pixel, Centinela, Kokoro (parallel work without conflicts)
 - Agent frontmatter: `initialPrompt` on 6 agents (auto-load key docs on start)
@@ -19,12 +27,16 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 - Linear state transitions in `dev`, `refine`, `shape` skills
 
 ### Changed
+- `CLAUDE.md`: architecture tree updated (Vercel cron → GitHub Actions)
+- `agents/oraculo-research-specialist.md`: 3-tier search tools (Gemini → Perplexity → OpenAI)
 - Root CLAUDE.md: added /batch and /simplify to commands, agent capabilities to delegation matrix
 - Renamed miicel.io → micelio across skills and agents
 - Monitor migrated from Vercel cron to GitHub Actions (Hobby plan limitation)
 - Monitor Slack notifications use bot token instead of webhook
 
 ### Removed
+- `scripts/invoke_forge.sh` — replaced by Codex native integration
+- `scripts/invoke_mycelium.sh` — replaced by `gemini_handler.sh`
 - `api/cron/monitor.py` — replaced by `scripts/monitor.py`
 - `vercel.json` — no longer needed (cron moved to GitHub Actions)
 - Vercel project for hive

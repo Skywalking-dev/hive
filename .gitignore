@@ -96,6 +96,9 @@ skills/n8n-validation-expert/
 skills/n8n-mcp-tools-expert/
 skills/n8n-automations/
 
+# === CACHE ===
+cache/
+
 # === MISC ===
 *.log
 *.tmp
