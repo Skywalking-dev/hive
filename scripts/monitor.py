@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Hive Monitor — poll GitHub/npm for Claude Code ecosystem updates, notify #hive in Slack.
+"""Hive Monitor — poll GitHub/npm for Claude Code ecosystem updates.
 
-Runs hourly via GitHub Actions. Checks for new releases in the last 75 minutes.
-For each update, posts a rich Slack message with: what changed, link, and how it helps us.
+Runs every 6h via GitHub Actions. Checks for new releases within the poll window.
+Outputs updates_json for the maintain job, which handles Slack notification.
 """
 
 # /// script
@@ -18,7 +18,6 @@ import sys
 from datetime import datetime, timezone, timedelta
 
 POLL_INTERVAL_MINUTES = 375  # cron every 6h + 15min buffer
-SLACK_CHANNEL = "C0APTL4JLCE"  # #hive
 
 GITHUB_SOURCES = [
     {
@@ -50,9 +49,6 @@ NPM_PACKAGES = [
         "context": "SDK para construir agents. Core de Micelio — mejoras directamente aplican a nuestro producto.",
     },
 ]
-
-SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
-
 
 def _github_headers():
     headers = {
@@ -135,89 +131,6 @@ def check_npm_package(source: dict) -> dict | None:
             "context": source["context"],
         }
     return None
-
-
-def _summarize_release(body: str, max_lines: int = 8) -> str:
-    """Extract key changes from release notes markdown."""
-    if not body:
-        return "_Sin release notes disponibles._"
-
-    lines = []
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped:
-            continue
-        # skip markdown headers, HR, images, links-only lines
-        if stripped.startswith(("![", "---", "***", "<")):
-            continue
-        lines.append(stripped)
-        if len(lines) >= max_lines:
-            break
-
-    return "\n".join(lines) if lines else "_Sin release notes disponibles._"
-
-
-def notify_slack(updates: list[dict]):
-    if not SLACK_BOT_TOKEN or not updates:
-        return False
-
-    for u in updates:
-        icon = ":github:" if u["source"] == "github" else ":package:"
-        summary = _summarize_release(u["body"])
-
-        blocks = [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": f"{u['name']} → {u['version']}",
-                },
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"{icon} *<{u['url']}|Ver release>*",
-                },
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*Cambios:*\n{summary}",
-                },
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": f"*Impacto Skywalking:*\n{u['context']}",
-                },
-            },
-            {"type": "divider"},
-        ]
-
-        payload = {
-            "channel": SLACK_CHANNEL,
-            "text": f"{u['name']} {u['version']} — nueva release",
-            "blocks": blocks,
-        }
-
-        req = urllib.request.Request(
-            "https://slack.com/api/chat.postMessage",
-            data=json.dumps(payload).encode(),
-            headers={
-                "Content-Type": "application/json; charset=utf-8",
-                "Authorization": f"Bearer {SLACK_BOT_TOKEN}",
-            },
-            method="POST",
-        )
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read())
-            if not result.get("ok"):
-                print(f"Slack error for {u['name']}: {result.get('error')}", file=sys.stderr)
-
-    return True
 
 
 def main():
