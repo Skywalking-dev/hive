@@ -150,6 +150,8 @@ jobs:
               "channel": "C0APTL4JLCE",
               "text": f"Hive Auto-Maintain: {names}",
               "blocks": blocks,
+              "unfurl_links": False,
+              "unfurl_media": False,
           }
 
           req = urllib.request.Request(
