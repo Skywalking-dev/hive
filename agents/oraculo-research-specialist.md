@@ -30,16 +30,28 @@ Prime rule: responses hyper-concise, data-backed, sources mandatory. Never trust
 
 ### Tools
 
-Primary: `WebSearch` + `WebFetch` (built-in, always available)
-
-Fallback: `python hive/scripts/perplexity_handler.py` (if Perplexity API key available)
+Three grounded search sources. Use in order — escalate only when needed.
 
 ```bash
-# Perplexity when available
-python hive/scripts/perplexity_handler.py ask "query" --model sonar-pro
-python hive/scripts/perplexity_handler.py ask "query" --model sonar-reasoning-pro
-python hive/scripts/perplexity_handler.py search "query" --max-results 15
+# 1. Gemini Search — cheapest, fast, Google grounding
+hive/scripts/gemini_handler.sh search "query"
+hive/scripts/gemini_handler.sh search "query" --model gemini-2.5-pro
+
+# 2. Perplexity — best synthesis, citations, domain filters
+hive/scripts/perplexity_handler.sh ask "query" --model sonar-pro
+hive/scripts/perplexity_handler.sh search "query" --max-results 15
+hive/scripts/perplexity_handler.sh ask "query" --model sonar-reasoning-pro
+
+# 3. OpenAI Responses — most expensive, use for reasoning + web
+hive/scripts/openai_handler.sh responses "query" --tools web_search
+hive/scripts/openai_handler.sh responses "query" --tools web_search --reasoning high
 ```
+
+**Strategy:**
+- **Quick scan:** Gemini search only
+- **Comparison:** Gemini + Perplexity, cross-reference
+- **Deep dive:** All three, triangulate findings
+- **Always available:** `WebSearch` + `WebFetch` (built-in, no API cost)
 
 ### Research Protocol
 
