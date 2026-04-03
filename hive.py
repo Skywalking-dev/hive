@@ -271,6 +271,123 @@ def merge_mcp_configs(source: Path, target: Path):
         info("MCP: all servers already present")
 
 
+HIVE_CLAUDE_MARKER = "<!-- hive:start -->"
+HIVE_CLAUDE_MARKER_END = "<!-- hive:end -->"
+
+
+def extract_hive_sections(hive_claude_path: Path) -> str:
+    """Extract Scripts (Handlers) and Env Vars sections from hive/CLAUDE.md."""
+    import re
+    content = hive_claude_path.read_text()
+
+    sections_to_extract = ["Scripts (Handlers)", "Env Vars"]
+    extracted = []
+
+    for section_name in sections_to_extract:
+        pattern = rf"(## {re.escape(section_name)}\n.*?)(?=\n## |\Z)"
+        match = re.search(pattern, content, re.DOTALL)
+        if match:
+            extracted.append(match.group(1).rstrip())
+
+    return "\n\n".join(extracted)
+
+
+def merge_claude_md(hive_dir: Path, workspace_root: Path):
+    """Append hive handler docs as a section in workspace CLAUDE.md, idempotent."""
+    hive_claude = hive_dir / "CLAUDE.md"
+    workspace_claude = workspace_root / "CLAUDE.md"
+
+    if not hive_claude.exists():
+        warn("hive/CLAUDE.md not found")
+        return
+
+    hive_sections = extract_hive_sections(hive_claude)
+    if not hive_sections:
+        warn("No handler sections found in hive/CLAUDE.md")
+        return
+
+    workspace_content = workspace_claude.read_text() if workspace_claude.exists() else ""
+
+    section = f"\n{HIVE_CLAUDE_MARKER}\n## Hive (auto-synced)\n\n{hive_sections}\n{HIVE_CLAUDE_MARKER_END}\n"
+
+    if HIVE_CLAUDE_MARKER in workspace_content:
+        import re
+        pattern = rf"\n?{re.escape(HIVE_CLAUDE_MARKER)}.*?{re.escape(HIVE_CLAUDE_MARKER_END)}\n?"
+        new_content = re.sub(pattern, section, workspace_content, flags=re.DOTALL)
+        if new_content != workspace_content:
+            workspace_claude.write_text(new_content)
+            info("CLAUDE.md: hive section updated")
+        else:
+            info("CLAUDE.md: hive section already up to date")
+    else:
+        workspace_claude.write_text(workspace_content.rstrip() + "\n" + section)
+        info("CLAUDE.md: hive section added")
+
+
+# API keys: (env_var, label, signup_url, required)
+API_KEYS = [
+    ("GEMINI_API_KEY",      "Gemini",      "https://aistudio.google.com/apikey",          True),
+    ("GROQ_API_KEY",        "Groq",        "https://console.groq.com",                    True),
+    ("DEEPSEEK_API_KEY",    "DeepSeek",    "https://platform.deepseek.com",               False),
+    ("OPENROUTER_API_KEY",  "OpenRouter",  "https://openrouter.ai/settings/keys",         False),
+    ("OPENAI_API_KEY",      "OpenAI",      "https://platform.openai.com/api-keys",        False),
+    ("PERPLEXITY_API_KEY",  "Perplexity",  "https://www.perplexity.ai/settings/api",      False),
+    ("SLACK_BOT_TOKEN",     "Slack",       "https://api.slack.com/apps",                   False),
+]
+
+
+def verify_env_keys(hive_dir: Path):
+    """Check if hive/.env exists and which API keys are configured."""
+    env_file = hive_dir / ".env"
+
+    if not env_file.exists():
+        warn(f".env not found at {env_file}")
+        print(f"  Copy the example:  cp {hive_dir}/.env.example {env_file}")
+        print()
+        print("  Required API keys:")
+        for var, label, url, required in API_KEYS:
+            tag = "required" if required else "optional"
+            print(f"    {'*' if required else ' '} {label:12s} {url}")
+        return
+
+    env_content = env_file.read_text()
+
+    missing_required = []
+    missing_optional = []
+    configured = []
+
+    for var, label, url, required in API_KEYS:
+        # Check if key is set (not empty, not placeholder)
+        has_key = False
+        for line in env_content.splitlines():
+            line = line.strip()
+            if line.startswith(f"{var}=") and not line.startswith("#"):
+                value = line.split("=", 1)[1].strip().strip('"').strip("'")
+                if value and not value.startswith("your_"):
+                    has_key = True
+                break
+
+        if has_key:
+            configured.append(label)
+        elif required:
+            missing_required.append((label, url))
+        else:
+            missing_optional.append((label, url))
+
+    if configured:
+        info(f"API keys configured: {', '.join(configured)}")
+
+    if missing_required:
+        warn("Missing required keys:")
+        for label, url in missing_required:
+            print(f"    * {label:12s} {url}")
+
+    if missing_optional:
+        print(f"  Optional keys (not configured):")
+        for label, url in missing_optional:
+            print(f"      {label:12s} {url}")
+
+
 def cmd_setup(args):
     info(f"Hive: {HIVE_DIR}")
     info(f"Workspace: {WORKSPACE_ROOT}")
@@ -284,6 +401,8 @@ def cmd_setup(args):
     print(f"  Symlink {WORKSPACE_ROOT}/.claude/agents -> {AGENTS_DIR}")
     print(f"  Generate .cursor/rules/ from skills")
     print(f"  Merge .mcp.json configs")
+    print(f"  Merge hive/CLAUDE.md into workspace CLAUDE.md")
+    print(f"  Verify API keys in hive/.env")
     print()
 
     if not args.yes:
@@ -304,6 +423,12 @@ def cmd_setup(args):
     if hive_mcp.exists():
         merge_mcp_configs(hive_mcp, workspace_mcp)
 
+    merge_claude_md(HIVE_DIR, WORKSPACE_ROOT)
+
+    print()
+    verify_env_keys(HIVE_DIR)
+
+    print()
     info("Done. Open Claude Code from workspace root to use hive skills.")
     return 0
 
