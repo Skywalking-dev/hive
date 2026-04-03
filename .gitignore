@@ -42,16 +42,11 @@ Thumbs.db
 .codex/
 
 # === PERSONAL / PRIVATE ===
-# Prefix with _ to keep private (convention)
+# Prefix skill directory with _ to keep private
 skills/_*/
-# Explicit private skills
 scripts/binance_handler.py
 scripts/gate_handler.py
 scripts/flight_tracker.py
-skills/binance/
-skills/gate/
-skills/financial-advisor/
-skills/flight-search/
 data/
 
 # === INSTALLED PACKS ===
