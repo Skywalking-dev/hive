@@ -42,13 +42,16 @@ Thumbs.db
 .codex/
 
 # === PERSONAL / PRIVATE ===
-# Crypto exchange integrations (not open source)
+# Prefix with _ to keep private (convention)
+skills/_*/
+# Explicit private skills
 scripts/binance_handler.py
 scripts/gate_handler.py
 scripts/flight_tracker.py
 skills/binance/
 skills/gate/
 skills/financial-advisor/
+skills/flight-search/
 data/
 
 # === INSTALLED PACKS ===
@@ -104,4 +107,3 @@ cache/
 *.tmp
 node_modules/
 .vercel
-skills/flight-search/
