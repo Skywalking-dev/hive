@@ -104,3 +104,4 @@ cache/
 *.tmp
 node_modules/
 .vercel
+skills/flight-search/
