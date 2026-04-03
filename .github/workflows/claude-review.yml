@@ -1,18 +1,166 @@
-name: Claude Code Review
+name: Code Review
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  review:
+  # --- Classify PR complexity ---
+  classify:
     runs-on: ubuntu-latest
+    outputs:
+      level: ${{ steps.classify.outputs.level }}
+    steps:
+      - name: Classify PR
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_FILES=$(gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json files -q '.files[].path')
+          FILE_COUNT=$(echo "$PR_FILES" | wc -l | tr -d ' ')
+          DIFF_LINES=$(gh pr diff ${{ github.event.pull_request.number }} --repo ${{ github.repository }} | wc -l | tr -d ' ')
+
+          LEVEL="normal"
+
+          # Critical: agent definitions, handlers, workflows, core CLI
+          if echo "$PR_FILES" | grep -qEi "agents/|scripts/.*_handler|\.github/workflows|hive\.py|plugin\.json"; then
+            LEVEL="critical"
+          fi
+
+          # Large PRs
+          if [ "$FILE_COUNT" -gt 20 ] || [ "$DIFF_LINES" -gt 5000 ]; then
+            LEVEL="critical"
+          fi
+
+          # Simple: only docs/config/skill markdown
+          ALL_SIMPLE=true
+          while IFS= read -r file; do
+            if ! echo "$file" | grep -qEi "README|CHANGELOG|docs/|\.md$|\.env\.example|\.gitignore"; then
+              ALL_SIMPLE=false
+              break
+            fi
+          done <<< "$PR_FILES"
+          if [ "$ALL_SIMPLE" = "true" ]; then
+            LEVEL="simple"
+          fi
+
+          echo "level=$LEVEL" >> "$GITHUB_OUTPUT"
+          echo "::notice::PR classified as: $LEVEL ($FILE_COUNT files, $DIFF_LINES diff lines)"
+
+  # --- Simple: auto-approve ---
+  review-simple:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'simple'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Auto-approve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "## Review: Approved (auto)
+
+          Docs/config changes only — no code review needed.
+
+          _Reviewed by Hive (auto-classify)_"
+
+  # --- Normal: DeepSeek review ---
+  review-normal:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'normal'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: DeepSeek Review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -euo pipefail
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PR_TITLE=$(gh pr view "$PR" --repo "$REPO" --json title -q '.title')
+          PR_BODY=$(gh pr view "$PR" --repo "$REPO" --json body -q '.body' | head -100)
+          PR_FILES=$(gh pr view "$PR" --repo "$REPO" --json files -q '.files[].path')
+          PR_DIFF=$(gh pr diff "$PR" --repo "$REPO" | head -8000)
+
+          FILE_COUNT=$(echo "$PR_FILES" | wc -l | tr -d ' ')
+
+          SYSTEM="You are a strict senior engineer reviewing a pull request. Analyze the diff and report:
+          1. **Bugs & correctness**: null safety, off-by-one, race conditions, missing error handling
+          2. **Security**: injection, exposed secrets, auth bypass, unsafe input
+          3. **Performance**: N+1 queries, unnecessary re-renders, missing memoization
+          4. **Code quality**: duplicated logic, inconsistent patterns, missing types
+          5. **Tests**: missing test coverage for new logic
+          Rules: Be specific. Reference file:line. Suggest fixes with code blocks. If clean, say so briefly. No filler. GitHub-flavored Markdown."
+
+          USER_MSG="# PR: ${PR_TITLE}
+
+          ## Description
+          ${PR_BODY}
+
+          ## Files changed (${FILE_COUNT})
+          ${PR_FILES}
+
+          ## Diff
+          \`\`\`diff
+          ${PR_DIFF}
+          \`\`\`"
+
+          PAYLOAD=$(jq -n \
+            --arg system "$SYSTEM" \
+            --arg user "$USER_MSG" \
+            '{
+              model: "deepseek-chat",
+              messages: [
+                {role: "system", content: $system},
+                {role: "user", content: $user}
+              ],
+              temperature: 0.3,
+              max_tokens: 4000
+            }')
+
+          RESPONSE=$(curl -sS --max-time 120 \
+            -X POST "https://api.deepseek.com/v1/chat/completions" \
+            -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+          TOKENS_IN=$(echo "$RESPONSE" | jq -r '.usage.prompt_tokens // 0')
+          TOKENS_OUT=$(echo "$RESPONSE" | jq -r '.usage.completion_tokens // 0')
+
+          if [ -z "$CONTENT" ]; then
+            echo "::error::Empty response from DeepSeek"
+            echo "$RESPONSE" >&2
+            exit 1
+          fi
+
+          BODY="## Code Review
+
+          ${CONTENT}
+
+          ---
+          _Reviewed by **DeepSeek V4** | ${TOKENS_IN} in / ${TOKENS_OUT} out | Classification: normal_"
+
+          gh pr comment "$PR" --repo "$REPO" --body "$BODY"
+
+  # --- Critical: Claude Sonnet ---
+  review-critical:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'critical'
     timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: write
       id-token: write
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,7 +170,7 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--model claude-sonnet-4-20250514"
+          claude_args: "--model claude-sonnet-4-6"
           prompt: |
             Review this PR as a strict senior engineer. For every file changed:
 

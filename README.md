@@ -1,80 +1,150 @@
 # Hive
 
-Give your AI coding assistant superpowers. 40+ skills, 10 agents (1 orchestrator + 9 specialists), one repo — works with Claude Code, Cursor, Gemini CLI, and Codex.
+Give your AI coding assistant superpowers. 60+ skills, 10 agents, LLM handlers for 6 providers — works with Claude Code, Cursor, Gemini CLI, and Codex.
 
 ## What is Hive?
 
-Hive turns your AI assistant into a full dev team. Instead of copy-pasting API docs or writing boilerplate, just use slash commands:
+Hive turns your AI assistant into a full dev team. Instead of copy-pasting API docs or writing boilerplate, use slash commands:
 
 ```bash
-/gmail inbox --unread                        # check email
-/perplexity "best auth library for Next.js"  # search the web
-/google-docs get <url>                       # read a doc as Markdown
-/slack read <thread_url>                     # catch up on a thread
 /shape                                       # create a well-defined issue
-/ship_it                                     # commit, push, open PR
+/dev                                         # orchestrate work across agents
+/ship_it                                     # review, fix, merge, deploy, verify
+/perplexity "best auth library for Next.js"  # search the web
+/gmail inbox --unread                        # check email
+/generate_image "a mountain landscape"       # create an image
 ```
 
-Need something bigger? Delegate to specialist agents that handle design, frontend, backend, QA, SEO, and more — each with deep domain knowledge.
+Need something bigger? Delegate to specialist agents that handle design, frontend, backend, QA, SEO, and more.
 
 ## Quick Start
 
 ```bash
-# Clone into your workspace
+# 1. Clone into your workspace
 cd ~/workspace
 git clone https://github.com/Skywalking-dev/hive.git
-cd hive
-uv sync                          # install Python deps
-cp .env.example .env             # add only the keys you need
-uv run hive install --all   # install third-party skills (n8n, Anthropic)
 
-# Install into workspace (creates symlinks one level up)
+# 2. Install dependencies
+cd hive
+uv sync
+
+# 3. Configure API keys (add only the ones you need)
+cp .env.example .env
+# Edit .env with your keys
+
+# 4. Install skill packs
+uv run hive install --all
+
+# 5. Setup workspace
 uv run hive setup
 ```
 
-This creates symlinks in your workspace root so Claude Code, Cursor, and other providers can find hive's skills and agents:
+That's it. Open Claude Code from `~/workspace/` and all skills, agents, and handlers are available.
+
+### What `hive setup` does
 
 ```
-~/workspace/                     ← open Claude Code here
+[hive] Actions:
+  Symlink ~/workspace/.claude/skills  -> hive/skills     # skills available
+  Symlink ~/workspace/.claude/agents  -> hive/agents     # agents available
+  Generate .cursor/rules/ from skills                     # Cursor compatible
+  Merge .mcp.json configs                                 # MCP servers
+  Merge hive/CLAUDE.md into workspace CLAUDE.md           # handler docs
+  Verify API keys in hive/.env                            # missing key checklist
+```
+
+Setup is **idempotent** — run it again after pulling updates to sync everything.
+
+### Workspace structure after setup
+
+```
+~/workspace/                          <- open your AI tool here
 ├── .claude/
-│   ├── skills/ → hive/skills/   ← symlink
-│   └── agents/ → hive/agents/   ← symlink
-├── .cursor/rules/               ← generated .mdc files
-├── hive/                        ← this repo (source of truth)
+│   ├── skills/ -> hive/skills/       <- symlink
+│   └── agents/ -> hive/agents/       <- symlink
+├── .cursor/rules/                    <- generated .mdc files
+├── .mcp.json                         <- merged MCP servers
+├── CLAUDE.md                         <- workspace config + hive handler docs
+├── hive/                             <- this repo (source of truth)
 │   ├── skills/
 │   ├── agents/
-│   └── scripts/
+│   ├── scripts/
+│   └── .env                          <- API keys (gitignored)
 └── your-projects/
 ```
 
-> All integrations are optional. Hive works with zero API keys — just add them as you need each integration.
+## LLM Handlers
 
-## How It Works
+Hive includes shell handlers for 6 LLM providers. All are OAI-compatible and load keys from `hive/.env`.
 
+| Handler | Default Model | Cost out/MTok | Commands |
+|---------|---------------|---------------|----------|
+| `groq_handler.sh` | Llama 4 Scout | Free | `ask`, `models` |
+| `deepseek_handler.sh` | DeepSeek V4 | $0.50 | `ask`, `models` |
+| `openrouter_handler.sh` | deepseek-chat | Free with `--free` | `ask`, `models`, `free` |
+| `gemini_handler.sh` | Gemini 2.5 Flash | $2.50 (free tier) | `ask`, `search`, `embed` |
+| `openai_handler.sh` | GPT-4.1 | $8.00 | `ask`, `responses`, `embeddings` |
+| `perplexity_handler.sh` | Sonar Pro | $15.00 | `ask`, `search`, `agent` |
+
+### Usage
+
+```bash
+# Free and fast
+hive/scripts/groq_handler.sh ask "Explain this error" --json
+
+# Cheapest frontier model
+hive/scripts/deepseek_handler.sh ask "Review this code" --system "You are a code reviewer"
+
+# Deep reasoning
+hive/scripts/deepseek_handler.sh ask "Analyze this architecture" --reasoner
+
+# Free via OpenRouter
+hive/scripts/openrouter_handler.sh ask "Summarize this" --free
+
+# With fallback chain
+hive/scripts/openrouter_handler.sh ask "Translate this" --fallbacks "google/gemini-2.5-flash,meta-llama/llama-4-scout"
+
+# Web search with citations
+hive/scripts/perplexity_handler.sh search "latest Next.js release"
 ```
-hive/
-├── .claude-plugin/
-│   └── plugin.json    ← plugin manifest
-├── skills/             ← active skills (core + installed packs)
-├── available/          ← pack skills (not active until installed)
-│   ├── google/
-│   ├── marketing/
-│   ├── devops/
-│   └── ...
-├── packs/              ← pack definitions (JSON)
-├── agents/             ← 10 agent definitions (1 orchestrator + 9 specialists)
-├── scripts/            ← Python handlers for external APIs
-├── docs/               ← security model, env variable reference
-└── hive.py             ← CLI: install packs, setup workspace
-```
 
-**Skills** are Markdown files that teach your AI assistant how to use a tool. Each skill maps to a `/slash-command` and declares which tools the AI can use. The AI reads the skill, understands the API, and executes it.
+### Model routing by task
 
-**Agents** are specialist personas with deep domain knowledge. You delegate tasks to them and they work autonomously.
-
-**Scripts** are lightweight Python handlers that connect skills to external APIs (Gmail, Slack, Google Drive, etc.). All credentials come from `.env` — nothing is hardcoded.
+| Task | Best pick | Why |
+|------|-----------|-----|
+| Classification / routing | Groq | Free, 3000+ tok/s |
+| Reviews / batch / bulk | DeepSeek V4 | Cheapest frontier ($0.50/MTok) |
+| Complex reasoning | DeepSeek R1 | 91% cheaper than Opus |
+| Code generation | OpenAI or DeepSeek | Dedicated code models |
+| Web search / grounded | Perplexity Sonar | Built-in search + citations |
+| Vision / multimodal | Gemini Flash | Free tier, 1M context |
+| Fallback / free models | OpenRouter `--free` | 29+ free models |
 
 ## Skills
+
+### Core (always installed)
+
+| Command | What it does |
+|---------|-------------|
+| `/shape` | Guided issue creation with discovery |
+| `/capture` | Quick idea to backlog |
+| `/refine` | Technical breakdown into agent sub-issues |
+| `/dev` | Orchestrate work across agents |
+| `/push_it` | Commit + push + open PR |
+| `/ship_it` | Full pipeline: review, fix, merge, deploy, verify |
+| `/pr-review` | PR review with Linear sync |
+| `/simplify` | 3 review agents audit changed code |
+| `/reunion` | Multi-agent meeting |
+
+### Senses (sensory extensions)
+
+| Command | Sense | What it does |
+|---------|-------|-------------|
+| `/process_video` | Watch | Video/YouTube -> transcript -> analysis |
+| `/process_audio` | Hear | Audio -> text (Whisper) |
+| `/perplexity` | Research | Real-time web knowledge |
+| `/generate_image` | Express | Idea -> image (Gemini Imagen 4.0) |
+| Chrome automation | Touch | Operate browser as human |
 
 ### Google
 
@@ -85,14 +155,6 @@ hive/
 | `/google-drive` | List, search, upload, download, share files |
 | `/google-calendar` | View events, check availability |
 | `/google-workspace` | Sheets, Tasks, Chat, Slides via gws CLI |
-| `/extract_transcript` | YouTube transcript extraction |
-
-### Search & AI
-
-| Command | What it does |
-|---------|-------------|
-| `/perplexity` | Web search with AI summaries (Sonar API) |
-| `/video-analysis` | Transcript analysis into structured insights |
 
 ### Communication
 
@@ -107,50 +169,53 @@ hive/
 |---------|-------------|
 | `/supabase` | Database queries, migrations, auth |
 | `/vercel` | Deploy, env vars, logs, cron |
-
-### Development Workflow
-
-| Command | What it does |
-|---------|-------------|
-| `/shape` | Guided issue creation with templates |
-| `/refine` | Technical breakdown into agent sub-issues |
-| `/dev` | Orchestrate work across agents |
-| `/ship_it` | Commit + push + open PR in one step |
-| `/pr-review` | PR review with issue sync |
-| `/capture` | Quick idea capture to backlog |
-
-### Development Tools
-
-| Command | What it does |
-|---------|-------------|
-| `/test-debug` | E2E test execution with real-time monitoring |
 | `/github-cli` | Git workflows, PR management, branch cleanup |
-| `/adversarial_review` | Technical review via external AI agents |
+| `/test-debug` | E2E test execution with real-time monitoring |
 
-### Media
+### Marketing & Content
 
 | Command | What it does |
 |---------|-------------|
-| `/process_audio` | Audio conversion and transcription |
+| `/copywriting` | Landing pages, hero sections, CTAs |
+| `/social-content` | LinkedIn posts, X threads |
+| `/content-strategy` | Content calendars, blog topics |
+| `/cold-email` | B2B outreach sequences |
+| `/email-sequence` | Nurture drips, onboarding flows |
+| `/competitor-alternatives` | Battle cards, positioning |
+| `/page-cro` | Conversion rate optimization |
+| `/pricing-strategy` | Pricing tiers, LATAM adaptation |
+
+### Finance
+
+| Command | What it does |
+|---------|-------------|
+| `/financial-advisor` | Portfolio analysis, asset allocation |
+| `/binance` | Spot/futures, balances, orders |
+| `/gate` | Gate.io markets, earn, positions |
+
+### n8n Automation
+
+| Command | What it does |
+|---------|-------------|
+| `/n8n-code-javascript` | JS Code nodes, $input/$json syntax |
+| `/n8n-code-python` | Python Code nodes |
+| `/n8n-expression-syntax` | Expression validation |
+| `/n8n-node-configuration` | Node config guidance |
+| `/n8n-workflow-patterns` | Architecture patterns |
+| `/n8n-validation-expert` | Error interpretation |
+| `/n8n-mcp-tools-expert` | MCP tool usage |
 
 ## Agents
 
-### Mentat — AI General Advisor
+### Mentat — Orchestrator
 
-The orchestrator. Mentat coordinates the entire agent ecosystem: breaks down complex work, delegates to specialists, synthesizes results, and ensures delivery. Think system architect + project manager + technical lead in one.
-
-- Strategic planning and architecture design
-- Multi-agent coordination and task routing
-- Business-technical bridge (ROI-driven decisions)
-- n8n workflow design and optimization
+Coordinates the entire agent ecosystem: breaks down work, delegates to specialists, synthesizes results, ensures delivery. System architect + project manager + technical lead.
 
 ### Specialists
 
-Domain experts that Mentat delegates to. Each one has deep knowledge and works autonomously.
-
-| Agent | What they do |
-|-------|-------------|
-| **Aurora** | Brand identity, design systems, UI mockups, test ID contracts |
+| Agent | Domain |
+|-------|--------|
+| **Aurora** | Brand identity, design systems, UI specs, test ID contracts |
 | **Pixel** | Next.js/React implementation, performance, accessibility |
 | **Kokoro** | FastAPI, databases, auth, backend architecture |
 | **Centinela** | QA strategy, Playwright E2E, regression testing |
@@ -160,68 +225,15 @@ Domain experts that Mentat delegates to. Each one has deep knowledge and works a
 | **Pregon** | Content strategy, social media, email campaigns |
 | **Lumen** | Technical SEO, Core Web Vitals, schema markup |
 
-## Multi-Provider Sync
-
-Write skills once, use them everywhere:
-
-| Provider | How it syncs |
-|----------|-------------|
-| Claude Code | `.claude-plugin/` — plugin format (native) |
-| Cursor | `.cursor/rules/` — auto-generated `.mdc` files |
-| Gemini CLI | `.agent/` — symlink |
-| Codex | `.codex/` — symlink |
-
-```bash
-uv run hive setup       # sync to Cursor, Gemini CLI, Codex
-```
-
-## Security
-
-Hive is designed to be operated by AI agents, so security guardrails are built in:
-
-- **Write operations require `--confirm`** — without it, scripts show a dry-run preview and exit. The AI must show you what it will do before executing.
-- **Gmail sending is permanently blocked** — the handler only creates drafts. You review and send manually.
-- **Google Drive sharing is domain-restricted** — external sharing requires explicit `--allow-external` flag.
-- **Pre-commit hook** scans for API keys, tokens, and private keys before every commit.
-- **Zero hardcoded credentials** — everything comes from `.env`.
-
-See [docs/SECURITY.md](docs/SECURITY.md) for the full model.
-
-## Configuration
-
-See [docs/ENV_VARIABLES.md](docs/ENV_VARIABLES.md) for every API key mapped to its script, skill, and purpose.
-
-## Creating Skills
-
-A skill is a Markdown file in `skills/<name>/SKILL.md`:
-
-```yaml
----
-name: my-skill
-description: What it does. When to trigger it.
-allowed-tools: Bash, Read
----
-
-# Instructions for the AI...
-```
-
-Use `/skill-creator` for guided creation, or add the file manually.
-
-## Requirements
-
-- Python 3.11+
-- [uv](https://docs.astral.sh/uv/) for dependency management
-- API keys for the integrations you want (all optional)
-
 ## Skill Packs
 
-Hive ships with core workflow skills. Everything else installs via packs:
+Core skills are always available. Everything else installs via packs:
 
 ```bash
-uv run hive install --list              # see all packs
+uv run hive list                        # see all packs and status
 uv run hive install google devops       # install specific packs
 uv run hive install --all               # install everything
-uv run hive install remove marketing  # uninstall a pack
+uv run hive remove marketing            # uninstall a pack
 ```
 
 | Pack | Skills | What's in it |
@@ -236,9 +248,66 @@ uv run hive install remove marketing  # uninstall a pack
 | **n8n** | 7 | n8n automation ([czlonkowski/n8n-skills](https://github.com/czlonkowski/n8n-skills), MIT) |
 | **anthropic** | 3 | PDF tools, skill creator, frontend design ([Anthropic](https://github.com/anthropics/skills), Proprietary) |
 
+## Multi-Provider Sync
+
+Write skills once, use them everywhere:
+
+| Provider | How it syncs |
+|----------|-------------|
+| Claude Code | `.claude-plugin/` — native plugin |
+| Cursor | `.cursor/rules/` — auto-generated `.mdc` files |
+| Gemini CLI | `.agent/` — symlink |
+| Codex | `.codex/` — symlink |
+
+## API Keys
+
+All integrations are optional. Add keys as you need them. After setup, Hive tells you what's missing:
+
+```
+[hive] API keys configured: Gemini, OpenAI, Perplexity, Slack
+    * Groq         https://console.groq.com          <- missing required
+  Optional keys (not configured):
+      DeepSeek     https://platform.deepseek.com
+      OpenRouter   https://openrouter.ai/settings/keys
+```
+
+See [docs/ENV_VARIABLES.md](docs/ENV_VARIABLES.md) for every key mapped to its script, skill, and purpose.
+
+## Security
+
+Hive is designed to be operated by AI agents, so security guardrails are built in:
+
+- **Write operations require `--confirm`** — without it, scripts show a dry-run preview and exit
+- **Gmail sending is permanently blocked** — the handler only creates drafts
+- **Google Drive sharing is domain-restricted** — external sharing requires explicit `--allow-external`
+- **Pre-commit hook** scans for API keys, tokens, and private keys
+- **Zero hardcoded credentials** — everything comes from `.env`
+
+See [docs/SECURITY.md](docs/SECURITY.md) for the full model.
+
+## Creating Skills
+
+```yaml
+---
+name: my-skill
+description: What it does. When to trigger it.
+allowed-tools: Bash, Read
+---
+
+# Instructions for the AI...
+```
+
+Save as `skills/<name>/SKILL.md`. Use `/skill-creator` for guided creation.
+
+## Requirements
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) for dependency management
+- API keys for the integrations you want (all optional)
+
 ## Contributing
 
-Issues and PRs welcome. Hive is maintained by [Skywalking](https://skywalking.dev), a dev studio in Patagonia, Argentina.
+Issues and PRs welcome. Hive is maintained by [Skywalking](https://skywalking.dev).
 
 ## License
 

@@ -7,6 +7,12 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 ## [Unreleased]
 
 ### Added
+- `scripts/groq_handler.sh`: Groq API handler (ask, models) — free tier, 3000+ tok/s inference
+- `scripts/deepseek_handler.sh`: DeepSeek API handler (ask, models) — cheapest frontier ($0.30/$0.50 MTok), R1 reasoning support
+- `scripts/openrouter_handler.sh`: OpenRouter API handler (ask, models, free) — universal fallback, 29+ free models, provider routing
+- `scripts/review_pr.sh`: PR review via LLM handler — classifies PR complexity, routes to DeepSeek (normal) or auto-approves (simple)
+- `hive setup`: now merges hive/CLAUDE.md handler docs into workspace CLAUDE.md (idempotent, marker-based)
+- `hive setup`: post-setup API key verification with signup links for missing keys
 - `ship_it` skill: simplify phase, Linear close, session inventory, token tracking in final report
 - `blender` skill: 3D modeling via Blender MCP
 - `technical-drawing` skill: ISO-standard SVG construction drawings
@@ -27,6 +33,7 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 - Linear state transitions in `dev`, `refine`, `shape` skills
 
 ### Changed
+- `claude-review.yml`: PR review routing — classify (simple/normal/critical), DeepSeek for normal, Claude Sonnet for critical only
 - `CLAUDE.md`: architecture tree updated (Vercel cron → GitHub Actions)
 - `agents/oraculo-research-specialist.md`: 3-tier search tools (Gemini → Perplexity → OpenAI)
 - Root CLAUDE.md: added /batch and /simplify to commands, agent capabilities to delegation matrix
