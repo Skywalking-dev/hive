@@ -34,6 +34,7 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 
 ### Changed
 - `claude-review.yml`: PR review routing — classify (simple/normal/critical), DeepSeek for normal, Claude Sonnet for critical only
+- `monitor.yml`: DeepSeek pre-filter before Claude maintain — skips Sonnet when releases don't affect Hive
 - `CLAUDE.md`: architecture tree updated (Vercel cron → GitHub Actions)
 - `agents/oraculo-research-specialist.md`: 3-tier search tools (Gemini → Perplexity → OpenAI)
 - Root CLAUDE.md: added /batch and /simplify to commands, agent capabilities to delegation matrix

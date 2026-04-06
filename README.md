@@ -133,7 +133,6 @@ hive/scripts/perplexity_handler.sh search "latest Next.js release"
 | `/push_it` | Commit + push + open PR |
 | `/ship_it` | Full pipeline: review, fix, merge, deploy, verify |
 | `/pr-review` | PR review with Linear sync |
-| `/simplify` | 3 review agents audit changed code |
 | `/reunion` | Multi-agent meeting |
 
 ### Senses (sensory extensions)
@@ -185,14 +184,6 @@ hive/scripts/perplexity_handler.sh search "latest Next.js release"
 | `/page-cro` | Conversion rate optimization |
 | `/pricing-strategy` | Pricing tiers, LATAM adaptation |
 
-### Finance
-
-| Command | What it does |
-|---------|-------------|
-| `/financial-advisor` | Portfolio analysis, asset allocation |
-| `/binance` | Spot/futures, balances, orders |
-| `/gate` | Gate.io markets, earn, positions |
-
 ### n8n Automation
 
 | Command | What it does |
@@ -239,7 +230,7 @@ uv run hive remove marketing            # uninstall a pack
 | Pack | Skills | What's in it |
 |------|--------|-------------|
 | **core** | 10 | shape, capture, refine, dev, push_it, ship_it, reunion (always installed) |
-| **google** | 6 | Gmail, Docs, Drive, Calendar, Workspace, YouTube |
+| **google** | 5 | Gmail, Docs, Drive, Calendar, Workspace |
 | **marketing** | 8 | Copywriting, cold email, CRO, pricing, content, social |
 | **devops** | 4 | Vercel, Supabase, GitHub CLI, test debugging |
 | **communication** | 2 | Slack, WhatsApp |
