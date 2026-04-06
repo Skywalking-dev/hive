@@ -162,6 +162,13 @@ hive/scripts/perplexity_handler.sh search "latest Next.js release"
 | `/slack` | Read threads, send messages, upload files |
 | `/whatsapp` | Send messages via WhatsApp Business API |
 
+### Incident Response
+
+| Command | What it does |
+|---------|-------------|
+| `/investigate` | Systematic debugging with evidence-first protocol |
+| `/postmortem` | Blameless incident documentation |
+
 ### Infrastructure
 
 | Command | What it does |

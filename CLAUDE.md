@@ -150,6 +150,12 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `n8n-validation-expert` | Error interpretation |
 | `n8n-mcp-tools-expert` | MCP tool usage |
 
+### Incident Response
+| Skill | Purpose |
+|-------|---------|
+| `investigate` | Systematic debugging — evidence-first, rollback-first |
+| `postmortem` | Blameless incident documentation |
+
 ### Other
 | Skill | Purpose |
 |-------|---------|

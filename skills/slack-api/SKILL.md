@@ -56,3 +56,33 @@ For rich messages, use Block Kit JSON structure:
 - `context` → footer/metadata
 
 Each interactive element needs unique `action_id`.
+
+## mrkdwn Formatting
+
+Slack uses **mrkdwn**, not standard Markdown. Many patterns silently break.
+
+### Critical differences
+
+| What you want | Markdown (WRONG) | Slack mrkdwn (RIGHT) |
+|---|---|---|
+| Bold | `**text**` | `*text*` |
+| Italic | `*text*` | `_text_` |
+| Strikethrough | `~~text~~` | `~text~` |
+| Link | `[text](url)` | `<url\|text>` |
+
+### What does NOT work in Slack
+
+- Tables (pipe syntax) — use bold label pairs or code blocks
+- Headers (`#`, `##`) — use `*bold text*` with blank lines
+- `---` horizontal rules
+- Syntax-highlighted code fences (`` ```python ``)
+- Images `![alt](url)`
+- HTML tags
+
+### Patterns
+
+**Sections** (replace headers): `*Section title*` + blank line
+**Structured data** (replace tables): `*Label:* value` on each line
+**Status lists**: `:white_check_mark: *Item* — done` / `:x: *Item* — pending`
+**Code blocks**: triple backticks on their own lines, no language tag
+**Lists**: `• Item` (bullet character, not `-`)
