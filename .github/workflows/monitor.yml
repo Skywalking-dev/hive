@@ -22,9 +22,97 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: uv run scripts/monitor.py
 
-  maintain:
+  # --- DeepSeek pre-filter: analyze if releases affect Hive ---
+  analyze:
     needs: check
     if: needs.check.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      affects_hive: ${{ steps.filter.outputs.affects_hive }}
+      analysis: ${{ steps.filter.outputs.analysis }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Analyze impact with DeepSeek
+        id: filter
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          UPDATES_JSON: ${{ needs.check.outputs.updates_json }}
+        run: |
+          set -euo pipefail
+
+          # Read CLAUDE.md for context
+          HIVE_CONTEXT=$(head -100 CLAUDE.md)
+
+          SYSTEM="You analyze software release notes and determine if they affect a specific project.
+          You MUST respond with valid JSON only. No markdown, no explanation outside the JSON.
+
+          Schema: {\"affects_hive\": bool, \"reason\": \"string\", \"changes_needed\": [\"string\"]}
+
+          affects_hive = true ONLY if the release:
+          - Changes CLI flags, tools, or APIs that Hive skills/agents reference
+          - Deprecates features Hive uses
+          - Introduces breaking changes to plugin format, skill format, or MCP
+          - Adds capabilities that existing skills should document
+
+          affects_hive = false for:
+          - Bug fixes that don't change APIs
+          - Performance improvements
+          - Internal refactors
+          - New features Hive doesn't use yet (don't speculatively add)"
+
+          USER_MSG="## Hive project context (CLAUDE.md excerpt)
+          ${HIVE_CONTEXT}
+
+          ## Releases to analyze
+          ${UPDATES_JSON}
+
+          Respond with JSON only."
+
+          PAYLOAD=$(jq -n \
+            --arg system "$SYSTEM" \
+            --arg user "$USER_MSG" \
+            '{
+              model: "deepseek-chat",
+              messages: [
+                {role: "system", content: $system},
+                {role: "user", content: $user}
+              ],
+              temperature: 0.1,
+              max_tokens: 1000,
+              response_format: {type: "json_object"}
+            }')
+
+          RESPONSE=$(curl -sS --max-time 60 \
+            -X POST "https://api.deepseek.com/v1/chat/completions" \
+            -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+
+          if [ -z "$CONTENT" ]; then
+            echo "::warning::Empty response from DeepSeek, defaulting to affects_hive=true"
+            echo "affects_hive=true" >> "$GITHUB_OUTPUT"
+            echo "analysis=DeepSeek unavailable, falling back to Claude" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          AFFECTS=$(echo "$CONTENT" | jq -r '.affects_hive // true')
+          REASON=$(echo "$CONTENT" | jq -r '.reason // "unknown"')
+
+          echo "affects_hive=$AFFECTS" >> "$GITHUB_OUTPUT"
+          echo "analysis<<EOANALYSIS" >> "$GITHUB_OUTPUT"
+          echo "$CONTENT" >> "$GITHUB_OUTPUT"
+          echo "EOANALYSIS" >> "$GITHUB_OUTPUT"
+
+          echo "::notice::DeepSeek analysis: affects_hive=$AFFECTS — $REASON"
+
+  # --- Claude Sonnet: only if DeepSeek says releases affect Hive ---
+  maintain:
+    needs: [check, analyze]
+    if: needs.analyze.outputs.affects_hive == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -54,6 +142,12 @@ jobs:
             ${{ needs.check.outputs.updates_json }}
             ```
 
+            DeepSeek pre-analysis of impact:
+
+            ```json
+            ${{ needs.analyze.outputs.analysis }}
+            ```
+
             Your job:
             1. For each update, fetch and read the FULL release notes / changelog
             2. Identify what changed that affects Hive:
@@ -70,12 +164,19 @@ jobs:
 
             Focus on accuracy over completeness — better to miss a minor update than introduce wrong changes.
 
-      - name: Notify Slack with PR info
-        if: always()
+  # --- Slack notification (always runs when updates detected) ---
+  notify:
+    needs: [check, analyze, maintain]
+    if: always() && needs.check.outputs.has_updates == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPDATES_JSON: ${{ needs.check.outputs.updates_json }}
+          AFFECTS_HIVE: ${{ needs.analyze.outputs.affects_hive }}
+          ANALYSIS: ${{ needs.analyze.outputs.analysis }}
           RUN_ID: ${{ github.run_id }}
         run: |
           python3 - <<'PYEOF'
@@ -83,6 +184,8 @@ jobs:
 
           token = os.environ["SLACK_BOT_TOKEN"]
           updates = json.loads(os.environ.get("UPDATES_JSON", "[]"))
+          affects = os.environ.get("AFFECTS_HIVE", "false")
+          analysis = os.environ.get("ANALYSIS", "")
           run_id = os.environ["RUN_ID"]
           gh_token = os.environ.get("GITHUB_TOKEN", "")
           repo = "Skywalking-dev/hive"
@@ -105,6 +208,14 @@ jobs:
                   if pr["head"]["ref"].startswith("hive/auto-maintain-"):
                       pr_url = pr["html_url"]
                       break
+          except Exception:
+              pass
+
+          # Parse DeepSeek reason
+          reason = ""
+          try:
+              a = json.loads(analysis)
+              reason = a.get("reason", "")
           except Exception:
               pass
 
@@ -136,19 +247,28 @@ jobs:
                       "text": f":white_check_mark: *PR creado:* <{pr_url}|Ver PR>\nRevisalo y mergealo cuando quieras.",
                   },
               })
-          else:
+          elif affects == "true":
               blocks.append({
                   "type": "section",
                   "text": {
                       "type": "mrkdwn",
-                      "text": f":information_source: No se creó PR — releases no afectan Hive.\n<{run_url}|Ver workflow run>",
+                      "text": f":warning: DeepSeek marcó impacto pero no se creó PR.\n<{run_url}|Ver workflow run>",
+                  },
+              })
+          else:
+              skip_reason = f" — {reason}" if reason else ""
+              blocks.append({
+                  "type": "section",
+                  "text": {
+                      "type": "mrkdwn",
+                      "text": f":fast_forward: No afecta Hive (filtrado por DeepSeek){skip_reason}\n<{run_url}|Ver workflow run>",
                   },
               })
 
           names = ", ".join(f"{u['name']} {u['version']}" for u in updates)
           payload = {
               "channel": "C0APTL4JLCE",
-              "text": f"Hive Auto-Maintain: {names}",
+              "text": f"Hive Monitor: {names}",
               "blocks": blocks,
               "unfurl_links": False,
               "unfurl_media": False,

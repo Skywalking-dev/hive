@@ -57,6 +57,11 @@
       "env": {
         "STITCH_API_KEY": "${STITCH_API_KEY}"
       }
+    },
+    "trivago": {
+      "description": "Trivago — hotel search and price comparison",
+      "type": "url",
+      "url": "https://mcp.trivago.com/mcp"
     }
   }
 }

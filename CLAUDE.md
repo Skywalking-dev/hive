@@ -156,6 +156,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `adversarial_review` | Debate invocation (Forge) |
 | `reunion` | Multi-agent meeting |
 | `travel-assistant` | Trip planning, flights, budget |
+| `accommodation-search` | Hotels/hostels/apartments via Google Hotels + Booking.com |
 | `crear_presupuesto` | Generate presupuestos |
 | `skill-creator` | Guided skill creation |
 
@@ -173,6 +174,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `scripts/transcript_handler.py` | `process_video` | YouTube Transcript API |
 | `scripts/binance_handler.py` | `binance` | Binance API |
 | `scripts/gate_handler.py` | `gate` | Gate.io API |
+| `scripts/accommodation_search.py` | `accommodation-search` | SerpAPI Google Hotels + Booking.com RapidAPI |
 
 ## Development
 
@@ -203,3 +205,5 @@ Required keys in `.env`:
 - `YOUTUBE_API_KEY` — Video metadata (optional, transcripts are free)
 - `BINANCE_API_KEY` / `BINANCE_SECRET_KEY` — Binance trading
 - `GATE_API_KEY` / `GATE_SECRET_KEY` — Gate.io trading
+- `SERPAPI_KEY` — Google Hotels search (accommodation-search, 100 free/mo)
+- `RAPIDAPI_KEY` — Booking.com search (accommodation-search, ~500 free/mo)
