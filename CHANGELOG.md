@@ -7,6 +7,9 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 ## [Unreleased]
 
 ### Added
+- `investigate` skill: systematic debugging — evidence-first, rollback-first, max 2 attempts then escalate
+- `postmortem` skill: blameless incident docs — 3 modes (dump/scratch/refine), Slack+Linear integration, P0-P3 severity
+- `slack-api` skill: added mrkdwn formatting guide (bold, italic, links, no-tables) to prevent silent Slack formatting errors
 - `scripts/groq_handler.sh`: Groq API handler (ask, models) — free tier, 3000+ tok/s inference
 - `scripts/deepseek_handler.sh`: DeepSeek API handler (ask, models) — cheapest frontier ($0.30/$0.50 MTok), R1 reasoning support
 - `scripts/openrouter_handler.sh`: OpenRouter API handler (ask, models, free) — universal fallback, 29+ free models, provider routing
