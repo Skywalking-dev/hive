@@ -180,6 +180,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `scripts/cerebras_handler.sh` | Free inference | Cerebras (ask, models) — 1M free TPD, 1500+ tok/s |
 | `scripts/fireworks_handler.sh` | Open-source hosting | Fireworks (ask, models) — fastest OSS, fine-tuning |
 | `scripts/fal_handler.py` | Image + video gen | fal.ai (image, video, status, models) — FLUX, Kling, Veo, Hailuo |
+| `scripts/router.sh` | Smart routing | Routes task types to optimal handler+model (route, list, run) |
 | `scripts/generate_image.py` | `generate_image` | Gemini Imagen 4.0 + Nano Banana |
 | `scripts/transcript_handler.py` | `process_video` | YouTube Transcript API |
 | `scripts/binance_handler.py` | `binance` | Binance API |
