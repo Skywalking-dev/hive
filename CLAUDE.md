@@ -176,6 +176,9 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `scripts/groq_handler.sh` | Reviews, classification | Groq (ask, models) — free tier, 3000+ tok/s |
 | `scripts/deepseek_handler.sh` | Reviews, batch tasks | DeepSeek (ask, models) — cheapest frontier |
 | `scripts/openrouter_handler.sh` | Fallback, free models | OpenRouter (ask, models, free) — universal gateway |
+| `scripts/xai_handler.sh` | Long context | xAI Grok (ask, models) — 2M context, $25 free credit |
+| `scripts/cerebras_handler.sh` | Free inference | Cerebras (ask, models) — 1M free TPD, 1500+ tok/s |
+| `scripts/fireworks_handler.sh` | Open-source hosting | Fireworks (ask, models) — fastest OSS, fine-tuning |
 | `scripts/generate_image.py` | `generate_image` | Gemini Imagen 4.0 + Nano Banana |
 | `scripts/transcript_handler.py` | `process_video` | YouTube Transcript API |
 | `scripts/binance_handler.py` | `binance` | Binance API |

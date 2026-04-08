@@ -63,8 +63,9 @@ for INPUT_FILE in "${FILES[@]}"; do
   fi
 
   if $TRANSCRIBE; then
-    if [ -z "${OPENAI_API_KEY:-}" ]; then
-      echo "  ERROR: OPENAI_API_KEY not set"
+    # Groq Whisper: $0.00185/min (free tier) vs OpenAI: $0.006/min
+    if [ -z "${GROQ_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ]; then
+      echo "  ERROR: Neither GROQ_API_KEY nor OPENAI_API_KEY set"
       continue
     fi
 
@@ -83,14 +84,38 @@ for INPUT_FILE in "${FILES[@]}"; do
     fi
 
     TRANSCRIPT_FILE="$OUTPUT_DIR/${UNIQUE}.txt"
-    echo "  Transcribing via Whisper..."
 
-    RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/audio/transcriptions" \
-      -H "Authorization: Bearer $OPENAI_API_KEY" \
-      -F "file=@$PROCESS_FILE" \
-      -F "model=whisper-1" \
-      -F "language=es" \
-      -F "response_format=text")
+    # Try Groq first (cheaper, free tier), fallback to OpenAI
+    if [ -n "${GROQ_API_KEY:-}" ]; then
+      echo "  Transcribing via Groq Whisper..."
+      RESPONSE=$(curl -s -X POST "https://api.groq.com/openai/v1/audio/transcriptions" \
+        -H "Authorization: Bearer $GROQ_API_KEY" \
+        -F "file=@$PROCESS_FILE" \
+        -F "model=whisper-large-v3" \
+        -F "language=es" \
+        -F "response_format=text")
+
+      # Fallback to OpenAI if Groq fails (rate limit, etc)
+      if [ -z "$RESPONSE" ] || echo "$RESPONSE" | grep -q '"error"'; then
+        echo "  Groq failed, falling back to OpenAI Whisper..."
+        if [ -n "${OPENAI_API_KEY:-}" ]; then
+          RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/audio/transcriptions" \
+            -H "Authorization: Bearer $OPENAI_API_KEY" \
+            -F "file=@$PROCESS_FILE" \
+            -F "model=whisper-1" \
+            -F "language=es" \
+            -F "response_format=text")
+        fi
+      fi
+    else
+      echo "  Transcribing via OpenAI Whisper..."
+      RESPONSE=$(curl -s -X POST "https://api.openai.com/v1/audio/transcriptions" \
+        -H "Authorization: Bearer $OPENAI_API_KEY" \
+        -F "file=@$PROCESS_FILE" \
+        -F "model=whisper-1" \
+        -F "language=es" \
+        -F "response_format=text")
+    fi
 
     echo "$RESPONSE" > "$TRANSCRIPT_FILE"
 

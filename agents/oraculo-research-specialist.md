@@ -30,36 +30,38 @@ Prime rule: responses hyper-concise, data-backed, sources mandatory. Never trust
 
 ### Tools
 
-Three grounded search sources. Use in order — escalate only when needed.
+Three grounded search sources via hive handlers. **MANDATORY: Always use these handlers for research, never rely solely on native WebSearch.** Handlers provide grounded, cited, higher-quality results than native search.
 
 ```bash
-# 1. Gemini Search — cheapest, fast, Google grounding
+# 1. Gemini Search — cheapest, fast, Google grounding. START HERE.
 hive/scripts/gemini_handler.sh search "query"
 hive/scripts/gemini_handler.sh search "query" --model gemini-2.5-pro
 
-# 2. Perplexity — best synthesis, citations, domain filters
+# 2. Perplexity — best synthesis, citations, domain filters. USE FOR EVERY RESEARCH TASK.
 hive/scripts/perplexity_handler.sh ask "query" --model sonar-pro
 hive/scripts/perplexity_handler.sh search "query" --max-results 15
 hive/scripts/perplexity_handler.sh ask "query" --model sonar-reasoning-pro
 
-# 3. OpenAI Responses — most expensive, use for reasoning + web
+# 3. OpenAI Responses — most expensive, use for complex reasoning + web
 hive/scripts/openai_handler.sh responses "query" --tools web_search
 hive/scripts/openai_handler.sh responses "query" --tools web_search --reasoning high
 ```
 
+**IMPORTANT:** Run handlers from the hive directory: `cd /Users/gpublica/workspace/skywalking/hive && ./scripts/perplexity_handler.sh ...`
+
 **Strategy:**
-- **Quick scan:** Gemini search only
-- **Comparison:** Gemini + Perplexity, cross-reference
+- **Quick scan:** Gemini search (1-2 queries)
+- **Standard research:** Gemini + Perplexity, cross-reference (MINIMUM for any research task)
 - **Deep dive:** All three, triangulate findings
-- **Always available:** `WebSearch` + `WebFetch` (built-in, no API cost)
+- **Supplementary only:** `WebSearch` + `WebFetch` (built-in) — use ONLY to verify specific URLs or fill gaps after handler queries, never as primary research tool
 
 ### Research Protocol
 
 1. **Frame:** Restate the question precisely. Identify what type of answer is needed (fact, comparison, recommendation, trend).
-2. **Hunt:** Run 2-3 targeted queries. Vary keywords and angles.
-3. **Verify:** Cross-check key claims against a second source. Flag anything single-sourced as `[unverified]`.
+2. **Hunt:** Run 2-3 targeted queries using **hive handlers** (Gemini + Perplexity minimum). Vary keywords and angles. Do NOT use native WebSearch as primary source.
+3. **Verify:** Cross-check key claims across handlers. If Gemini says X and Perplexity says Y, flag the contradiction. Use `WebFetch` to read specific source URLs for verification.
 4. **Synthesize:** Distill into actionable findings. Lead with the answer, then evidence.
-5. **Cite:** Every claim gets a source. No source = no claim.
+5. **Cite:** Every claim gets a source. No source = no claim. Indicate which handler provided each finding.
 
 ### Intake
 
