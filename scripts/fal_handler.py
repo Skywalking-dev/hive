@@ -40,10 +40,16 @@ IMAGE_MODELS = {
 }
 
 VIDEO_MODELS = {
+    "wan": "fal-ai/wan/v2.7/text-to-video",
+    "wan-i2v": "fal-ai/wan/v2.7/image-to-video",
     "kling": "fal-ai/kling-video/v2.5-turbo/pro/text-to-video",
-    "kling-i2v": "fal-ai/kling-video/v2.5-turbo/standard/image-to-video",
-    "veo": "fal-ai/veo2",
-    "hailuo": "fal-ai/minimax/hailuo-2.3/standard/text-to-video",
+    "kling-i2v": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+    "kling3": "fal-ai/kling-video/v3/pro/image-to-video",
+    "veo": "fal-ai/veo3.1/lite/text-to-video",
+    "veo-fast": "fal-ai/veo3.1/fast/text-to-video",
+    "veo-std": "fal-ai/veo3.1/text-to-video",
+    "sora": "fal-ai/sora-2/text-to-video",
+    "pixverse": "fal-ai/pixverse/v6/text-to-video",
 }
 
 
@@ -152,7 +158,7 @@ def cmd_image(args: list[str]):
 
 def cmd_video(args: list[str]):
     prompt = ""
-    model = "kling"
+    model = "wan"
     duration = "5"
     aspect = "16:9"
 
@@ -174,12 +180,13 @@ def cmd_video(args: list[str]):
     model_id = VIDEO_MODELS.get(model, model)
     payload = {"prompt": prompt, "aspect_ratio": aspect}
 
-    if "kling" in model_id:
+    # Duration format varies by provider
+    if "veo" in model_id:
+        payload["duration"] = f"{duration}s"
+    elif "kling" in model_id:
         payload["duration"] = duration  # string
-    elif "veo" in model_id:
-        payload["duration"] = f"{duration}s"  # "5s" format
-    elif "hailuo" in model_id or "minimax" in model_id:
-        payload["duration"] = int(duration)  # int
+    else:
+        payload["duration"] = int(duration)  # wan, sora, pixverse use int
 
     submit = api_request(f"{QUEUE_URL}/{model_id}", payload)
     if "error" in submit:
