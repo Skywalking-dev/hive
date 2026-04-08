@@ -12,15 +12,11 @@ from urllib.request import Request, urlopen
 from urllib.error import HTTPError
 
 # Load .env
+from dotenv import load_dotenv
+
 SCRIPT_DIR = Path(__file__).resolve().parent
 HIVE_DIR = SCRIPT_DIR.parent
-env_path = HIVE_DIR / ".env"
-if env_path.exists():
-    for line in env_path.read_text().splitlines():
-        line = line.strip()
-        if line and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip())
+load_dotenv(HIVE_DIR / ".env")
 
 FAL_KEY = os.environ.get("FAL_KEY", "")
 if not FAL_KEY:
@@ -75,9 +71,11 @@ def poll_until_done(model_id: str, request_id: str, max_wait: int = 300) -> dict
     status_url = f"{QUEUE_URL}/{model_id}/requests/{request_id}/status"
     result_url = f"{QUEUE_URL}/{model_id}/requests/{request_id}"
     elapsed = 0
-    interval = 3
+    interval = 2
     while elapsed < max_wait:
         status = api_request(f"{status_url}?logs=1", method="GET")
+        if "error" in status and not isinstance(status.get("status"), str):
+            return {"error": f"Poll failed: {status}"}
         s = status.get("status", "")
         if s == "COMPLETED":
             return api_request(result_url, method="GET")
@@ -85,8 +83,7 @@ def poll_until_done(model_id: str, request_id: str, max_wait: int = 300) -> dict
             return {"error": f"Job {s}", "detail": status}
         time.sleep(interval)
         elapsed += interval
-        if elapsed > 30:
-            interval = 5
+        interval = min(interval * 1.5, 10)  # exponential backoff, cap 10s
     return {"error": f"Timeout after {max_wait}s"}
 
 
@@ -189,11 +186,11 @@ def cmd_video(args: list[str]):
         payload["duration"] = int(duration)  # wan, sora, pixverse use int
 
     submit = api_request(f"{QUEUE_URL}/{model_id}", payload)
-    if "error" in submit:
+    request_id = submit.get("request_id")
+    if not request_id:
         print(json.dumps({"success": False, "error": submit}))
         return
 
-    request_id = submit["request_id"]
     print(f"Queued: {request_id} (video gen takes 30-120s)", file=sys.stderr)
     result = poll_until_done(model_id, request_id, max_wait=300)
 

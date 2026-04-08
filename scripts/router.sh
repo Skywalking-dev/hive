@@ -59,7 +59,8 @@ cmd_route() {
   fi
 
   IFS='|' read -r handler model cost <<< "$route"
-  echo "{\"handler\":\"$handler\",\"model\":\"$model\",\"cost\":\"$cost\"}"
+  jq -n --arg h "$handler" --arg m "$model" --arg c "$cost" \
+    '{handler:$h, model:$m, cost:$c}'
 }
 
 cmd_list() {
@@ -94,7 +95,7 @@ cmd_run() {
     # Python handler (fal_handler.py)
     local subcmd="image"
     [[ "$task" == video* ]] && subcmd="video"
-    exec python3 "$handler_path" "$subcmd" "$@" --model "$model"
+    exec uv run python "$handler_path" "$subcmd" "$@" --model "$model"
   else
     # Bash handler — route to ask command with model
     exec bash "$handler_path" ask "$@" --model "$model"
