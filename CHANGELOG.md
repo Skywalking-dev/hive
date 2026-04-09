@@ -7,6 +7,7 @@ Format based on [Common Changelog](https://common-changelog.org/), versions foll
 ## [Unreleased]
 
 ### Added
+- `generate_audio` skill + `scripts/generate_audio.py`: Mentat's voice — TTS via OpenAI (gpt-4o-mini-tts, onyx voice, ES-LATAM + EN-UK, speed 1.15)
 - `investigate` skill: systematic debugging — evidence-first, rollback-first, max 2 attempts then escalate
 - `postmortem` skill: blameless incident docs — 3 modes (dump/scratch/refine), Slack+Linear integration, P0-P3 severity
 - `slack-api` skill: added mrkdwn formatting guide (bold, italic, links, no-tables) to prevent silent Slack formatting errors
