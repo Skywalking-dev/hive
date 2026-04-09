@@ -74,7 +74,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | Skill | Sense | What |
 |-------|-------|------|
 | `generate_image` | Visual expression | Idea → image (Gemini Imagen 4.0 + Nano Banana) |
-| `generate_audio` | Speak | Text → voice (TODO: Gemini TTS) |
+| `generate_audio` | Speak | Text → voice (OpenAI TTS, onyx, gpt-4o-mini-tts) |
 
 ### Interact
 | Skill | Sense | What |
@@ -182,6 +182,7 @@ Skills are sensory extensions — each one gives Mentat a new capability.
 | `scripts/fal_handler.py` | Image + video gen | fal.ai (image, video, status, models) — FLUX, Kling, Veo, Hailuo |
 | `scripts/router.sh` | Smart routing | Routes task types to optimal handler+model (route, list, run) |
 | `scripts/generate_image.py` | `generate_image` | Gemini Imagen 4.0 + Nano Banana |
+| `scripts/generate_audio.py` | `generate_audio` | OpenAI TTS (gpt-4o-mini-tts, onyx voice) |
 | `scripts/transcript_handler.py` | `process_video` | YouTube Transcript API |
 | `scripts/binance_handler.py` | `binance` | Binance API |
 | `scripts/gate_handler.py` | `gate` | Gate.io API |
