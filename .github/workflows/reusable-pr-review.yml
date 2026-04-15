@@ -1,0 +1,253 @@
+name: Reusable PR Review
+
+# Reusable workflow consumed by Skywalking project repos.
+# Call from project: .github/workflows/pr-review.yml
+#
+#   on:
+#     pull_request:
+#       types: [opened, synchronize, reopened]
+#
+#   jobs:
+#     review:
+#       uses: Skywalking-dev/hive/.github/workflows/reusable-pr-review.yml@main
+#       secrets:
+#         DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+#         ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+#       with:
+#         critical-paths: "src/api/|src/auth/|middleware/|migrations/"
+#         large-files-threshold: 25
+#         large-diff-threshold: 5000
+
+on:
+  workflow_call:
+    inputs:
+      critical-paths:
+        description: "Regex of paths that auto-classify as critical (Claude review)"
+        type: string
+        required: false
+        default: "auth/|api/|middleware/|migrations/|\\.github/workflows/"
+      simple-paths:
+        description: "Regex of paths that auto-classify as simple (auto-approve)"
+        type: string
+        required: false
+        default: "README|CHANGELOG|docs/|\\.md$|\\.env\\.example|\\.gitignore"
+      large-files-threshold:
+        description: "Files changed above this → critical"
+        type: number
+        required: false
+        default: 20
+      large-diff-threshold:
+        description: "Diff lines above this → critical"
+        type: number
+        required: false
+        default: 5000
+      claude-model:
+        description: "Claude model for critical reviews"
+        type: string
+        required: false
+        default: "claude-sonnet-4-6"
+      deepseek-model:
+        description: "DeepSeek model for normal reviews"
+        type: string
+        required: false
+        default: "deepseek-chat"
+    secrets:
+      DEEPSEEK_API_KEY:
+        required: true
+      ANTHROPIC_API_KEY:
+        required: false
+
+jobs:
+  # --- Classify PR complexity ---
+  classify:
+    runs-on: ubuntu-latest
+    outputs:
+      level: ${{ steps.classify.outputs.level }}
+      file_count: ${{ steps.classify.outputs.file_count }}
+      diff_lines: ${{ steps.classify.outputs.diff_lines }}
+    steps:
+      - name: Classify PR
+        id: classify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CRITICAL_PATHS: ${{ inputs.critical-paths }}
+          SIMPLE_PATHS: ${{ inputs.simple-paths }}
+          LARGE_FILES: ${{ inputs.large-files-threshold }}
+          LARGE_DIFF: ${{ inputs.large-diff-threshold }}
+        run: |
+          set -euo pipefail
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PR_FILES=$(gh pr view "$PR" --repo "$REPO" --json files -q '.files[].path')
+          FILE_COUNT=$(echo "$PR_FILES" | wc -l | tr -d ' ')
+          DIFF_LINES=$(gh pr diff "$PR" --repo "$REPO" | wc -l | tr -d ' ')
+
+          LEVEL="normal"
+
+          # Critical: matches critical-paths regex
+          if echo "$PR_FILES" | grep -qE "$CRITICAL_PATHS"; then
+            LEVEL="critical"
+          fi
+
+          # Critical: large PR
+          if [ "$FILE_COUNT" -gt "$LARGE_FILES" ] || [ "$DIFF_LINES" -gt "$LARGE_DIFF" ]; then
+            LEVEL="critical"
+          fi
+
+          # Simple: ALL files match simple-paths regex
+          ALL_SIMPLE=true
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            if ! echo "$file" | grep -qE "$SIMPLE_PATHS"; then
+              ALL_SIMPLE=false
+              break
+            fi
+          done <<< "$PR_FILES"
+          if [ "$ALL_SIMPLE" = "true" ]; then
+            LEVEL="simple"
+          fi
+
+          echo "level=$LEVEL" >> "$GITHUB_OUTPUT"
+          echo "file_count=$FILE_COUNT" >> "$GITHUB_OUTPUT"
+          echo "diff_lines=$DIFF_LINES" >> "$GITHUB_OUTPUT"
+          echo "::notice::PR classified as: $LEVEL ($FILE_COUNT files, $DIFF_LINES diff lines)"
+
+  # --- Simple: auto-approve ---
+  review-simple:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'simple'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Auto-approve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --body "## Review: Approved (auto)
+
+          Docs/config changes only — no code review needed.
+
+          _Reviewed by Hive (auto-classify) — ${{ needs.classify.outputs.file_count }} files, ${{ needs.classify.outputs.diff_lines }} diff lines_"
+
+  # --- Normal: DeepSeek review ---
+  review-normal:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'normal'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: DeepSeek Review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_MODEL: ${{ inputs.deepseek-model }}
+        run: |
+          set -euo pipefail
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PR_TITLE=$(gh pr view "$PR" --repo "$REPO" --json title -q '.title')
+          PR_BODY=$(gh pr view "$PR" --repo "$REPO" --json body -q '.body' | head -100)
+          PR_FILES=$(gh pr view "$PR" --repo "$REPO" --json files -q '.files[].path')
+          PR_DIFF=$(gh pr diff "$PR" --repo "$REPO" | head -8000)
+
+          FILE_COUNT=$(echo "$PR_FILES" | wc -l | tr -d ' ')
+
+          SYSTEM="You are a strict senior engineer reviewing a pull request. Analyze the diff and report:
+          1. **Bugs & correctness**: null safety, off-by-one, race conditions, missing error handling
+          2. **Security**: injection, exposed secrets, auth bypass, unsafe input
+          3. **Performance**: N+1 queries, unnecessary re-renders, missing memoization
+          4. **Code quality**: duplicated logic, inconsistent patterns, missing types
+          5. **Tests**: missing test coverage for new logic
+          Rules: Be specific. Reference file:line. Suggest fixes with code blocks. If clean, say so briefly. No filler. GitHub-flavored Markdown."
+
+          USER_MSG="# PR: ${PR_TITLE}
+
+          ## Description
+          ${PR_BODY}
+
+          ## Files changed (${FILE_COUNT})
+          ${PR_FILES}
+
+          ## Diff
+          \`\`\`diff
+          ${PR_DIFF}
+          \`\`\`"
+
+          PAYLOAD=$(jq -n \
+            --arg model "$DEEPSEEK_MODEL" \
+            --arg system "$SYSTEM" \
+            --arg user "$USER_MSG" \
+            '{
+              model: $model,
+              messages: [
+                {role: "system", content: $system},
+                {role: "user", content: $user}
+              ],
+              temperature: 0.3,
+              max_tokens: 4000
+            }')
+
+          RESPONSE=$(curl -sS --max-time 120 \
+            -X POST "https://api.deepseek.com/v1/chat/completions" \
+            -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+          TOKENS_IN=$(echo "$RESPONSE" | jq -r '.usage.prompt_tokens // 0')
+          TOKENS_OUT=$(echo "$RESPONSE" | jq -r '.usage.completion_tokens // 0')
+
+          if [ -z "$CONTENT" ]; then
+            echo "::error::Empty response from DeepSeek"
+            echo "$RESPONSE" >&2
+            exit 1
+          fi
+
+          BODY="## Code Review
+
+          ${CONTENT}
+
+          ---
+          _Reviewed by **DeepSeek V4** | ${TOKENS_IN} in / ${TOKENS_OUT} out | Classification: normal_"
+
+          gh pr comment "$PR" --repo "$REPO" --body "$BODY"
+
+  # --- Critical: Claude Sonnet ---
+  review-critical:
+    needs: classify
+    runs-on: ubuntu-latest
+    if: needs.classify.outputs.level == 'critical'
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--model ${{ inputs.claude-model }}"
+          prompt: |
+            Review this PR as a strict senior engineer. For every file changed:
+
+            1. **Bugs & correctness**: null safety, off-by-one, race conditions, missing error handling
+            2. **Security**: injection, exposed secrets, auth bypass, unsafe input
+            3. **Performance**: N+1 queries, unnecessary re-renders, missing memoization, dead code
+            4. **Code quality**: duplicated logic, inconsistent patterns, missing types, naming
+            5. **Tests**: missing test coverage for new logic
+
+            Be specific. Reference file:line. Suggest fixes with code blocks.
+            If everything is clean, leave a single comment confirming the review passed.
+            Do NOT skip files. Do NOT be lenient. Flag anything you would flag in a real code review.

@@ -1,12 +1,18 @@
 ---
 name: ship_it
-description: Full shipping pipeline — simplify, commit, push, PR, review, fix, merge, deploy, verify, close Linear, report. Use when user says "ship it" and wants code to reach production verified. Handles everything from uncommitted changes to live deployment.
-allowed-tools: Bash(git:*), Bash(gh:*), Bash(vercel:*), Bash(curl:*), Skill(pr-review), Skill(push_it), Skill(simplify), Skill(vercel), Agent
+description: Full shipping pipeline — lefthook + local review + fix + simplify + push + CI review + merge + deploy + verify + close Linear + report. Use when user says "ship it" and wants code to reach production verified. Handles everything from uncommitted changes to live deployment, with review happening PRE-push so PRs nacen verdes.
+allowed-tools: Bash(git:*), Bash(gh:*), Bash(vercel:*), Bash(curl:*), Skill(review-diff), Skill(simplify), Skill(push_it), Skill(pr-review), Skill(vercel), Agent
 ---
 
 # Ship It
 
-Simplify → Push → Review → Fix → Merge → Deploy → Verify → Close → Report. Not done until it's live, verified, and documented.
+Baseline → Lefthook → Local Review → Fix → Simplify → Push → CI Review → Merge → Deploy → Verify → Close → Report. Not done until it's live, verified, and documented.
+
+## Design principle
+
+Review + simplify happen **LOCAL and PRE-push**. Claude is already in session with full context — fixing in-session is cheaper than round-tripping through CI. PRs nacen verdes: clean history, single CI run, no `fix: resolve review findings` commit pollution.
+
+Second pair of eyes still runs post-push via `reusable-pr-review.yml` (DeepSeek, cold, unbiased, cheap) — but on a diff that's already clean.
 
 ## Session Tracking
 
@@ -14,85 +20,103 @@ At the START of the pipeline, capture baseline state for the final report:
 
 ```bash
 # Files modified in this session (uncommitted + recent commits on branch)
-git diff --name-only HEAD~$(git rev-list --count origin/main..HEAD) 2>/dev/null || git diff --name-only
+BASE=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+BASE=${BASE:-main}
+git diff --name-only origin/${BASE}...HEAD 2>/dev/null
 git diff --cached --name-only
 git diff --name-only
 
 # Token usage — read from session context if available
 ```
 
-Store these for Phase 7.
+Store: `BASELINE_FILES`, `BASELINE_TOKENS`.
 
 ## Pipeline
 
-### Phase 0 — Simplify
+### Phase 0 — Baseline
+Capture state above. If nothing to ship (clean tree + HEAD == origin/BASE), exit with "nothing to ship".
 
-1. Run `/simplify` on all changed files
-2. If simplify produces fixes, commit them: `refactor: simplify per review`
-3. Push if needed
+### Phase 1 — Lefthook (pre-commit)
+Linters/formatters run automatically via `lefthook.yml` on every commit. If the repo has no lefthook config:
+1. Warn user: "No lefthook config found — linters not enforced pre-commit. Recommended: copy from skywalking-template."
+2. Proceed anyway (not a blocker).
 
-### Phase 1 — Push (if needed)
+**Never run linters via LLM tool calls.** That's what lefthook is for.
 
-If there are uncommitted changes or no open PR:
+### Phase 2 — Local Review (Claude, pre-push)
+1. Run `/review-diff` on all changes (committed + uncommitted vs `origin/${BASE}`)
+2. Read findings. Decision:
+   - **CLEAN** → Phase 4
+   - **PROCEED** (only MEDIUM/LOW) → Phase 4, note findings in report
+   - **BLOCK** (any CRITICAL/HIGH) → Phase 3
 
-1. Run `/push_it` — stages, commits, pushes, opens PR
-2. Continue to Phase 2 with the new PR
+### Phase 3 — Fix Loop (local, pre-push)
+While `/review-diff` returns BLOCK:
+1. Apply fixes in-session (no commit yet — keep working tree dirty)
+2. Re-run `/review-diff`
+3. Repeat
 
-If a PR already exists and is up to date, skip to Phase 2.
+**Max iterations: 3.** If still BLOCK after 3 rounds, STOP and ask user. Report:
+- What you tried
+- What review-diff still flags
+- What you don't understand
 
-### Phase 2 — Self-Review
+### Phase 4 — Simplify
+1. Run `/simplify` on all changed files (now correctness-clean)
+2. Apply any fixes in-session
+3. No commit yet
 
-1. Run `/pr-review` on the current PR
-2. Read all findings and PR comments
+### Phase 5 — Commit + Push
+1. Stage all changes: `git add -A` (or specific files — avoid secrets)
+2. Single clean commit with descriptive message (NOT `fix: resolve review findings` — the fixes never hit git history)
+3. Run `/push_it` for push + PR creation, OR if branch is already pushed, just `git push` and update existing PR
+4. Capture `PR_NUMBER` and `PR_URL`
 
-### Phase 3 — Fix Loop
+### Phase 6 — CI Review (DeepSeek / second opinion)
+1. Wait for CI workflows to complete: `gh pr checks {PR_NUMBER}` — poll every 30s, max 5min
+2. Read the review comment posted by `reusable-pr-review.yml` (DeepSeek)
+3. Decision:
+   - **All checks pass + review clean** → Phase 7
+   - **Review comment flags NEW findings** (things `/review-diff` missed):
+     - CRITICAL/HIGH → re-enter Phase 3 fix loop (this time fix, commit, push, re-wait)
+     - MEDIUM/LOW → note in report, proceed
+   - **CI check fails** → STOP, alert user with failure details
 
-While there are CRITICAL or HIGH findings:
+**Max extra fix rounds triggered by CI: 2.** If CI still unhappy after 2 extra rounds, stop and escalate.
 
-1. Fix each finding in the codebase
-2. Commit fixes: `fix: resolve PR review findings`
-3. Push
-4. Re-run `/pr-review`
-5. Repeat until APPROVE
+### Phase 7 — Merge
+1. Final CI check: `gh pr checks {PR_NUMBER}` — all green
+2. Merge: `gh pr merge {PR_NUMBER} --squash --delete-branch`
 
-**Max iterations:** 3. If still blocked after 3 rounds, stop and ask user.
-
-### Phase 4 — Merge
-
-1. Verify CI checks pass: `gh pr checks {PR_NUMBER}`
-2. Wait for checks if pending (poll every 30s, max 5min)
-3. Merge: `gh pr merge {PR_NUMBER} --squash --delete-branch`
-
-### Phase 5 — Verify Deploy
-
-1. Detect platform from project (check `vercel.json`, `.vercel/`, etc.)
+### Phase 8 — Verify Deploy
+1. Detect platform (check `vercel.json`, `.vercel/`, deploy scripts)
 2. **Vercel projects:**
-   - `vercel ls --json` → find latest deployment
-   - Wait for deployment to be READY (poll `vercel inspect`, max 3min)
+   - `vercel ls --json` → find latest deployment on production
+   - Poll `vercel inspect` until READY (max 3min)
    - `curl -sI {PRODUCTION_URL}` → verify HTTP 200
-   - If the project has a known health endpoint or page, fetch it
-3. **Non-Vercel:** Check if there's a deploy script or CI/CD, report status
-4. **If browser tools available:** Navigate to production URL, take screenshot, verify key elements render
+   - If known health endpoint exists, fetch it
+3. **Non-Vercel:** check deploy script/CI-CD, report status
+4. **Tooling-only repos** (hive, skywalking-core, etc.) → skip, note "n/a — tooling repo"
+5. **If browser tools available:** navigate to production URL, screenshot, verify key elements render
 
-### Phase 6 — Close Linear
-
-1. Detect Linear issue from branch name or PR body (pattern: `SKY-\d+`, `[A-Z]+-\d+`)
-2. Update the issue with a shipping comment:
+### Phase 9 — Close Linear
+1. Detect Linear issue from branch name or PR body (pattern: `(SKY|MIIC|[A-Z]+)-\d+`)
+2. Update the issue with shipping comment:
    ```
    Shipped via PR #{NUMBER}
 
    Files changed: {FILE_COUNT}
    - {FILE_LIST (max 20, then "and N more")}
 
-   Review: {N} rounds, {FIXES} fixes
+   Local review: {LOCAL_ROUNDS} rounds, {LOCAL_FIXES} fixes
+   CI review: {CI_VERDICT}, {CI_EXTRA_ROUNDS} extra rounds
    Deploy: {PLATFORM} → {PRODUCTION_URL}
    Session tokens: ~{INPUT_TOKENS} input, ~{OUTPUT_TOKENS} output
    ```
 3. Transition issue state → **Done**
 4. If no Linear issue detected, skip and note in report
 
-### Phase 7 — Report
-
+### Phase 10 — Report
 Present to user:
 
 ```
@@ -100,12 +124,14 @@ Present to user:
 
 📋 Session Inventory:
    Files modified: {FILE_COUNT}
-   {FILE_LIST with status indicators: M=modified, A=added, D=deleted}
+   {FILE_LIST with status: M=modified, A=added, D=deleted}
 
 🔍 Quality:
-   Simplify: {SIMPLIFY_RESULT — fixes applied or "clean"}
-   Review: {N} rounds, {TOTAL_FIXES} fixes applied
-   CI: ✓ all checks passed
+   Lefthook: {✓ ran | ⚠ no config}
+   Local review (Claude): {LOCAL_ROUNDS} rounds, {LOCAL_FIXES} fixes → {CLEAN|PROCEED}
+   Simplify: {result — fixes applied or "clean"}
+   CI review (DeepSeek): {verdict}, {CI_EXTRA_ROUNDS} extra rounds
+   CI checks: ✓ all passed
 
 🚢 Deployment:
    Platform: {PLATFORM}
@@ -121,9 +147,10 @@ Present to user:
 ## Rules
 
 - NEVER merge with failing CI
-- NEVER skip the simplify phase — always clean code before shipping
-- NEVER skip the review phase — always self-review after simplify
-- If review finds CRITICAL security issues, STOP and alert user before fixing
+- NEVER skip the local review phase (`/review-diff`) — that's the whole point of the pre-push refactor
+- NEVER run linters via LLM tool calls — lefthook handles it for free
+- NEVER commit the fix loop as separate commits — fixes happen in-session, then one clean commit
+- If local review finds CRITICAL security issues, STOP and alert user before fixing
 - If deploy fails, DO NOT retry blindly — report the error
 - If production verification fails (non-200, key elements missing), alert user immediately
 - Always squash merge to keep history clean
@@ -134,8 +161,26 @@ Present to user:
 ## Relation to Other Skills
 
 ```
-/simplify → code quality review (3 agents audit changed code)
-/push_it  → commit + push + open PR (code done, ready for review)
-/ship_it  → simplify + review + fix + merge + deploy + verify + close + report
-/pr-review → just the review step (standalone)
+lefthook          → pre-commit, runs linters/formatters/tests (no LLM)
+/review-diff      → Claude local pre-push review (no GitHub, no Linear)
+/simplify         → code quality/reuse audit on clean code
+/push_it          → commit + push + open PR
+/pr-review        → review an existing open PR + Linear sync (manual / post-merge)
+/ship_it          → full pipeline orchestrator
+
+reusable-pr-review.yml → CI workflow, DeepSeek/Claude second opinion, runs automatically on every PR
 ```
+
+## Why this order
+
+Old order (before 2026-04):
+```
+simplify → push → pr-review → fix loop (N commits) → merge
+```
+Problems: noisy history, N CI runs, review operates on mid-quality code, fix commits clutter PR.
+
+New order:
+```
+lefthook → review-diff → fix (in-session) → simplify → push → CI review (second opinion) → merge
+```
+Benefits: 1 commit, 1 CI run, PR nace verde, DeepSeek catches what Claude missed without session bias.
