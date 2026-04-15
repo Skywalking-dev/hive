@@ -219,7 +219,7 @@ jobs:
 
           gh pr comment "$PR" --repo "$REPO" --body "$BODY"
 
-  # --- Critical: Claude Sonnet ---
+  # --- Critical: Claude Sonnet (or DeepSeek Reasoner fallback) ---
   review-critical:
     needs: classify
     runs-on: ubuntu-latest
@@ -230,11 +230,26 @@ jobs:
       pull-requests: write
       id-token: write
     steps:
+      - name: Check anthropic key availability
+        id: check-anthropic
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Critical review will use Claude (${{ inputs.claude-model }})"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::ANTHROPIC_API_KEY not set — falling back to DeepSeek Reasoner for critical review"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check-anthropic.outputs.available == 'true'
         with:
           fetch-depth: 0
 
       - name: Claude Code Review
+        if: steps.check-anthropic.outputs.available == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -251,3 +266,82 @@ jobs:
             Be specific. Reference file:line. Suggest fixes with code blocks.
             If everything is clean, leave a single comment confirming the review passed.
             Do NOT skip files. Do NOT be lenient. Flag anything you would flag in a real code review.
+
+      - name: DeepSeek Reasoner Fallback (critical)
+        if: steps.check-anthropic.outputs.available == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+        run: |
+          set -euo pipefail
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PR_TITLE=$(gh pr view "$PR" --repo "$REPO" --json title -q '.title')
+          PR_BODY=$(gh pr view "$PR" --repo "$REPO" --json body -q '.body' | head -100)
+          PR_FILES=$(gh pr view "$PR" --repo "$REPO" --json files -q '.files[].path')
+          PR_DIFF=$(gh pr diff "$PR" --repo "$REPO" | head -12000)
+
+          FILE_COUNT=$(echo "$PR_FILES" | wc -l | tr -d ' ')
+
+          SYSTEM="You are a strict senior engineer reviewing a CRITICAL pull request (touches security-sensitive paths, workflows, or is large). Be especially thorough. Analyze the diff and report:
+          1. **Bugs & correctness**: null safety, off-by-one, race conditions, missing error handling
+          2. **Security**: injection, exposed secrets, auth bypass, unsafe input, RLS bypass, SSRF
+          3. **Performance**: N+1 queries, unnecessary re-renders, missing memoization, dead code
+          4. **Code quality**: duplicated logic, inconsistent patterns, missing types, naming
+          5. **Tests**: missing test coverage for new logic
+          6. **Workflow safety** (if .github/workflows changed): secret exposure, injection via PR title/body, untrusted inputs in run blocks
+          Rules: Be specific. Reference file:line. Suggest fixes with code blocks. If clean, say so briefly. No filler. GitHub-flavored Markdown."
+
+          USER_MSG="# PR: ${PR_TITLE}
+
+          ## Description
+          ${PR_BODY}
+
+          ## Files changed (${FILE_COUNT})
+          ${PR_FILES}
+
+          ## Diff
+          \`\`\`diff
+          ${PR_DIFF}
+          \`\`\`"
+
+          PAYLOAD=$(jq -n \
+            --arg system "$SYSTEM" \
+            --arg user "$USER_MSG" \
+            '{
+              model: "deepseek-reasoner",
+              messages: [
+                {role: "system", content: $system},
+                {role: "user", content: $user}
+              ],
+              temperature: 0.2,
+              max_tokens: 6000
+            }')
+
+          RESPONSE=$(curl -sS --max-time 300 \
+            -X POST "https://api.deepseek.com/v1/chat/completions" \
+            -H "Authorization: Bearer ${DEEPSEEK_API_KEY}" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+
+          CONTENT=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // empty')
+          TOKENS_IN=$(echo "$RESPONSE" | jq -r '.usage.prompt_tokens // 0')
+          TOKENS_OUT=$(echo "$RESPONSE" | jq -r '.usage.completion_tokens // 0')
+
+          if [ -z "$CONTENT" ]; then
+            echo "::error::Empty response from DeepSeek Reasoner"
+            echo "$RESPONSE" >&2
+            exit 1
+          fi
+
+          BODY="## Code Review (critical)
+
+          > ANTHROPIC_API_KEY not configured — reviewed with DeepSeek Reasoner fallback. Add the secret to your repo/org to upgrade critical reviews to Claude ${{ inputs.claude-model }}.
+
+          ${CONTENT}
+
+          ---
+          _Reviewed by **DeepSeek Reasoner** (fallback) | ${TOKENS_IN} in / ${TOKENS_OUT} out | Classification: critical_"
+
+          gh pr comment "$PR" --repo "$REPO" --body "$BODY"
