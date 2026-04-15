@@ -1,11 +1,13 @@
 ---
 name: pr-review
-description: Review pull requests and sync with Linear issues. Use when there's a PR to review, need to sync PR state with Linear, or want automated review feedback. Handles GitHub PR operations and Linear state transitions.
+description: Review an EXISTING open PR and sync Linear state. Use for manual review of another agent's or teammate's PR, or post-merge Linear transitions. For local pre-push self-review during /ship_it, use /review-diff instead — /pr-review operates on GitHub PRs and is the post-push layer.
 ---
 
 # PR Review
 
-Review PRs, provide structured feedback, sync Linear state.
+Review an existing open PR, provide structured feedback, sync Linear state.
+
+> **Note on split (2026-04):** Local pre-push review moved to `/review-diff` (Claude, in-session, no side effects). Automated CI review runs via `reusable-pr-review.yml` on every PR (DeepSeek/Claude, cold second opinion). `/pr-review` remains the manual skill for reviewing open PRs on demand and syncing Linear state post-merge.
 
 ## Config
 
